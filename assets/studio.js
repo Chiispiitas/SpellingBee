@@ -42,7 +42,7 @@ async function showStudio(){
 $('login-form').addEventListener('submit',event=>{
  event.preventDefault();$('login-status').textContent='';const button=event.submitter;
  button.disabled=true;button.textContent='Signing in…';
- const form=Object.fromEntries(new FormData(event.target));api('login',form).then(data=>{BeeClient.setToken(data.token);return showStudio();}).catch(e=>$('login-status').textContent=e.message).finally(()=>{button.disabled=false;button.innerHTML='Sign in <span aria-hidden="true">↗</span>';});
+ const form=Object.fromEntries(new FormData(event.target));api('login',form).then(data=>{BeeClient.setToken(data.token);return showStudio();}).catch(e=>$('login-status').textContent=e.message).finally(()=>{button.disabled=false;button.innerHTML='Sign in <span aria-hidden="true"></span>';});
 });
 $('show-password').onclick=()=>{const input=$('login-form').elements.password;input.type=input.type==='password'?'text':'password';$('show-password').textContent=input.type==='password'?'Show':'Hide';};
 $('logout').onclick=()=>{if((dirtyWords||dirtyBrand)&&!confirm('You have unsaved changes. Sign out anyway?'))return;api('logout',{}).then(()=>{BeeClient.clearToken();location.reload();}).catch(e=>notice(e.message,true));};
