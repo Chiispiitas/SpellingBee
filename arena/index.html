@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<!-- ==============================================
+     *  Head
+============================================== -->
+<head>
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+
+    <title>Spelling Bee Study View</title>
+    <meta content="Spelling Bee App · Practice and competition" name="description">
+
+  <!-- Favicon -->
+  <link href="../brand.svg" rel="icon">
+
+    <!-- Main -->
+    <link href="style.css?v=20260919-judgeundo-descenders1" rel="stylesheet">
+    <link href="ambient.css" rel="stylesheet">
+    <link href="presenter-cloud.css" rel="stylesheet">
+<link rel="stylesheet" href="product.css"></head>
+
+<!-- ==============================================
+     *  Body
+============================================== -->
+<body>
+    <div id="spell-container" aria-hidden="true"></div>
+
+    <button class="session-tray-toggle" id="session-tray-toggle" type="button" aria-label="Open cloud session" aria-expanded="false">›</button>
+    <aside class="session-tray" id="session-tray" aria-label="Cloud session">
+        <h2>Study View</h2>
+        <p>Practice locally, or enter an Admin session code to follow its words and progress.</p>
+        <div class="session-code-row">
+            <input id="session-code-input" inputmode="numeric" autocomplete="off" placeholder="Session code" aria-label="Numerical session code">
+            <button id="session-connect" type="button">Connect</button>
+        </div>
+        <p class="session-status" id="session-status">Local Study mode.</p>
+        <div class="session-tray-links">
+            <a id="judge-view-link" href="judge.html">Judge View</a>
+            <a id="admin-view-link" href="admin.html">Admin View</a>
+            <a href="screen.html?demo=1" target="_blank" rel="noopener">Screen rehearsal</a>
+        </div>
+        <button id="session-disconnect" type="button">Disconnect cloud session</button>
+    </aside>
+
+    <div id="secret-word"></div>
+
+    <header class="product-study-brand"><img src="../brand.svg" alt="School logo"><strong data-product-school>Your school</strong></header>
+
+    <main class="stage">
+        <div id="word" class="word" aria-live="polite" aria-atomic="true">—</div>
+    </main>
+
+    <section class="controls" role="group" aria-label="Controls">
+        <button class="controls-toggle" id="controls-toggle" type="button" title="Hide controls" aria-label="Hide controls">⌄</button>
+        <!-- Audio controls -->
+        <div class="group audio-group" aria-label="Audio">
+            <span class="label">Audio</span>
+            <button class="btn" id="play-audio" title="Play pronunciation (Space)">▶︎ Play</button>
+            <label class="volume-control" for="volume-slider" title="Pronunciation volume">
+                <span class="volume-icon" aria-hidden="true">🔊</span>
+                <input id="volume-slider" class="volume-slider" type="range" min="0" max="200" step="5" value="100" aria-label="Pronunciation volume">
+                <output id="volume-value" for="volume-slider">100%</output>
+            </label>
+        </div>
+
+        <!-- Word navigation -->
+        <div class="group" aria-label="Word navigation">
+            <button class="btn primary" id="next-letter" title="Next Letter (L)">Next Letter</button>
+            <button class="btn success" id="next-word" title="Next word (N)">Next Word</button>
+        </div>
+
+        <!-- Difficulty selection -->
+        <div class="group" aria-label="Difficulty">
+            <span class="label">Difficulty</span>
+            <button class="btn" id="btn-easy">Easy</button>
+            <button class="btn" id="btn-medium">Medium</button>
+            <button class="btn" id="btn-hard">Hard</button>
+            <button class="btn" id="btn-tiebreaker" hidden>Tiebreaker</button>
+        </div>
+
+        <!-- Pool selection -->
+        <div class="pool">
+            <select id="pool-select">
+                <option value="4TH-5TH">4TH-5TH</option>
+                <option value="6TH-7TH">6TH-7TH</option>
+                <option value="JUNIOR">JUNIOR</option>
+                <option value="SENIOR">SENIOR</option>
+            </select>
+        </div>
+    </section>
+
+    <audio id="audio" preload="auto"></audio>
+    <audio id="wrong-audio" preload="auto"></audio>
+    <audio id="correct-audio" preload="auto"></audio>
+
+    <div class="lev-logo-container">
+        <img src="../brand.svg" style="height: calc(100% - 9px);">
+        <span id="cheat-word" aria-hidden="true" style="position:absolute;left:0;right:0;bottom:1px;height:7px;line-height:7px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;font-family:Georgia,'Palatino Linotype',serif;font-size:6px;font-weight:600;letter-spacing:.05em;color:rgba(239,225,189,.16);text-shadow:0 1px 2px rgba(0,0,0,.55);user-select:none;pointer-events:none;"></span>
+    </div>
+
+    <div class="english-logo-container">
+        <img src="../brand.svg">
+    </div>
+
+    <!-- JavaScript -->
+
+
+
+
+<script src="../client-config.js"></script><script src="product-boot.js"></script><script>BeeProduct.start([{"src": "js/main.js?v=20261022-history25"}, {"src": "js/cloud.js?v=20261023-judgelives27"}, {"src": "js/presenter-cloud.js?v=20261023-judgelives27"}, {"code": "\n        // Keep feedback sounds independent from the pronunciation volume slider.\n        // Correct and wrong-answer effects always play at 45% volume.\n        const wrongAudio = document.getElementById('wrong-audio');\n        const correctAudio = document.getElementById('correct-audio');\n\n        function lockFeedbackVolume(audio) {\n            audio.volume = 0.45;\n            audio.addEventListener('volumechange', () => {\n                if (Math.abs(audio.volume - 0.45) > 0.001) {\n                    audio.volume = 0.45;\n                }\n            });\n        }\n\n        lockFeedbackVolume(wrongAudio);\n        lockFeedbackVolume(correctAudio);\n\n        // Mirror the current word in a tiny, faint label beneath the Lev logo.\n        const cheatWord = document.getElementById('cheat-word');\n        const secretWordMirrorSource = document.getElementById('secret-word');\n        const syncCheatWord = () => {\n            cheatWord.textContent = secretWordMirrorSource.textContent;\n        };\n        new MutationObserver(syncCheatWord).observe(secretWordMirrorSource, {\n            childList: true,\n            characterData: true,\n            subtree: true\n        });\n        syncCheatWord();\n\n        // Preserve the correct-word sound when a word is completed entirely\n        // through the neutral Next Letter reveal sequence.\n        document.getElementById('next-letter').addEventListener('click', () => {\n            const nextLetter = document.getElementById('next-letter');\n            const word = document.getElementById('word');\n\n            if (nextLetter.disabled && !word.querySelector('.char.err')) {\n                correctAudio.currentTime = 0;\n                correctAudio.play().catch(() => {});\n            }\n        });\n\n        // L reveals the next letter using the same neutral button behavior.\n        window.addEventListener('keydown', (event) => {\n            if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;\n\n            if (event.key === 'l' || event.key === 'L') {\n                event.preventDefault();\n                document.getElementById('next-letter').click();\n            }\n        }, { capture: true });\n    "}]);</script></body>
+</html>

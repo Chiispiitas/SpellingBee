@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Spelling Bee · Screen View</title>
+  <link rel="icon" href="../brand.svg">
+  <link rel="stylesheet" href="screen.css?v=20261022-partners24">
+<link rel="stylesheet" href="product.css"></head>
+<body>
+  <main class="broadcast" id="broadcast" aria-label="Spelling Bee audience display">
+    <video class="camera-feed hidden" id="camera-feed" autoplay playsinline muted aria-hidden="true"></video>
+    <img class="camera-still hidden" id="camera-still" alt="Occasional camera preview">
+    <div class="camera-shade" aria-hidden="true"></div>
+    <div class="arena" aria-hidden="true"></div>
+    <header class="broadcast-header">
+      <div class="school-brand"><img src="../brand.svg" alt="School logo"><strong>Your school</strong></div>
+      <div class="broadcast-event"><div class="event-bug"><span>Spelling Bee</span><strong id="round-bug"></strong></div><img class="english-brand" src="../brand.svg" alt="Secondary school logo"></div>
+    </header>
+    <section class="scene" id="scene" aria-live="polite"></section>
+    <footer class="broadcast-footer"><span id="footer-copy"></span></footer>
+    <div class="logo-sweep" id="logo-sweep" aria-hidden="true"><div class="sweep-panel"><img src="../brand.svg" alt=""></div></div>
+    <div class="signal hidden" id="signal" role="status">Reconnecting · last scene held</div>
+  </main>
+  <form class="screen-join hidden" id="screen-join">
+    <img src="../brand.svg" alt="School logo">
+    <h1>Screen View</h1><p>Enter the same session code used in Admin View.</p>
+    <label for="screen-code">Session code</label><input id="screen-code" inputmode="numeric" autocomplete="off" required>
+    <button type="submit">Connect screen</button><p id="join-error" role="status"></p>
+    <a href="screen.html?demo=1">Preview all scenes</a>
+  </form>
+  <button class="fullscreen" id="fullscreen" type="button">⛶ Full screen · F</button>
+  <button class="camera-toggle hidden" id="camera-toggle" type="button">Camera · C</button>
+  <aside class="camera-setup hidden" id="camera-setup" aria-label="Camera setup">
+    <h2>Broadcast cameras</h2>
+    <div id="camera-slots"></div>
+    <button id="camera-add" type="button">Add camera</button>
+    <p>Choose different cameras, then start them together. All ready feeds stay on; switching uses the school logo sweep while the feeds stay ready. Hotkeys work here or in Admin in the same browser. Keep this screen open.</p>
+    <p id="camera-status" role="status">Main: 1 · Secondary: 2. Camera audio is off. Admin stills update about every 15 seconds.</p>
+    <div class="camera-actions"><button id="camera-start" type="button">Start cameras</button><button id="camera-stop" type="button" disabled>Stop all cameras</button><button id="camera-close" type="button">Hide controls</button></div>
+  </aside>
+
+
+
+
+<script src="../client-config.js"></script><script src="product-boot.js"></script><script>BeeProduct.start([{"src": "js/cloud.js?v=20261023-judgelives27"}, {"src": "js/screen-model.js?v=20261022-history25"}, {"src": "js/screen-camera.js?v=20261019-cuts21"}, {"src": "js/screen-view.js?v=20261022-partners24"}]);</script></body>
+</html>

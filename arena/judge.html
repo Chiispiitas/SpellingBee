@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <title>Spelling Bee Judge View</title>
+  <link href="../brand.svg" rel="icon">
+  <link href="style.css?v=20260919-judgeundo-descenders1" rel="stylesheet">
+  <link href="control-view.css?v=20261023-judgelives27" rel="stylesheet">
+<link rel="stylesheet" href="product.css"></head>
+<body class="control-view" data-role="judge">
+  <section class="join-gate" id="join-gate">
+    <div class="join-card">
+      <h1>Judge / Teacher View</h1>
+      <p>Enter your name and the numerical session code shown in Admin or Study. Your name will be visible in the Admin View.</p>
+      <div class="judge-name-row">
+        <input id="judge-name" autocomplete="name" maxlength="50" aria-label="Judge name" placeholder="Judge name">
+      </div>
+      <div class="join-row">
+        <input id="join-session-code" inputmode="numeric" autocomplete="off" aria-label="Session code" placeholder="Session code">
+        <button class="control-button" id="join-session-button" type="button">Join</button>
+      </div>
+      <p class="join-status" id="join-status"></p>
+    </div>
+  </section>
+
+  <div class="control-app hidden" id="control-app">
+    <div class="control-shell">
+      <header class="control-header">
+        <div class="control-brand"><img src="../brand.svg" alt="School logo"></div>
+        <div class="control-header-actions">
+          <span class="difficulty-pill" id="difficulty-pill">EASY</span>
+          <span class="connection-pill" id="connection-pill">Connecting</span>
+        </div>
+      </header>
+
+      <main class="control-grid">
+        <section class="control-card word-card">
+          <div class="judge-contestant" id="judge-contestant" aria-live="polite" hidden>
+            <strong id="judge-contestant-name"></strong><span id="judge-contestant-lives"></span>
+          </div>
+          <div class="control-word" id="control-word">—</div>
+          <p class="word-meta" id="word-meta">Waiting for presenter</p>
+          <div class="verdict-row" aria-label="Judge current-letter decision">
+            <button class="verdict-button incorrect" type="button" data-verdict="incorrect" title="Mark current letter incorrect (P)">×</button>
+            <button class="verdict-button undo" id="undo-letter-button" type="button" data-action="undo" title="Undo previous letter (Backspace)">⌫</button>
+            <button class="verdict-button correct" type="button" data-verdict="correct" title="Mark current letter correct (O)">✓</button>
+          </div>
+          <div class="control-toolbar">
+            <button class="control-button" id="pool-launcher" type="button">Remaining words</button>
+          </div>
+        </section>
+
+        <aside class="info-stack">
+          <section class="control-card info-card">
+            <h2>Narrow AmE pronunciation</h2>
+            <p class="info-value" id="ipa-value">—</p>
+          </section>
+          <section class="control-card info-card">
+            <h2>Definition</h2>
+            <p class="info-value" id="definition-value">—</p>
+          </section>
+          <section class="control-card info-card">
+            <h2>Example sentence</h2>
+            <p class="info-value" id="example-value">—</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+  </div>
+
+  <section class="pool-modal hidden" id="pool-modal" aria-modal="true" role="dialog">
+    <div class="pool-panel">
+      <div class="pool-panel-header">
+        <h2>Remaining words</h2>
+        <button class="control-button" id="pool-close" type="button">Close</button>
+      </div>
+      <div class="pool-columns" id="pool-columns"></div>
+    </div>
+  </section>
+
+
+
+
+<script src="../client-config.js"></script><script src="product-boot.js"></script><script>BeeProduct.start([{"src": "js/cloud.js?v=20261023-judgelives27"}, {"src": "js/button-feedback.js?v=20261015-sync5"}, {"src": "js/control-view.js?v=20261023-judgelives27"}]);</script></body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1" name="viewport">
+  <title>Spelling Bee Admin View</title>
+  <link href="../brand.svg" rel="icon">
+  <link href="style.css?v=20260918-longword1" rel="stylesheet">
+  <link href="control-view.css?v=20261023-judgelives27" rel="stylesheet">
+  <link href="screen-admin.css?v=20261022-history25" rel="stylesheet">
+<link rel="stylesheet" href="product.css"></head>
+<body class="control-view" data-role="remote">
+  <section class="join-gate" id="join-gate">
+    <div class="join-card">
+      <h1>Admin View</h1>
+      <p>Start a session here, or connect to an existing Admin or Study session. Share the same code with judges and Study view.</p>
+      <div class="join-row">
+        <input id="join-session-code" inputmode="numeric" autocomplete="off" aria-label="Session code" placeholder="Session code">
+        <button class="control-button" id="start-admin-session" type="button">Start / resume from Admin</button>
+        <button class="control-button" id="join-session-button" type="button">Connect</button>
+      </div>
+      <p class="join-status" id="join-status"></p>
+    </div>
+  </section>
+
+  <div class="control-app hidden" id="control-app">
+    <div class="control-shell">
+      <header class="control-header">
+        <div class="control-brand"><img src="../brand.svg" alt="School logo"></div>
+        <div class="control-header-actions">
+          <span class="difficulty-pill" id="difficulty-pill">EASY</span>
+          <a class="control-button" id="admin-study-link" href="index.html" target="_blank" rel="noopener">Study view ↗</a>
+          <button class="control-button" id="reset-admin-session" type="button" disabled>Reset session</button>
+          <span class="connection-pill" id="connection-pill">Connecting</span>
+        </div>
+      </header>
+
+      <main class="control-grid">
+        <section class="control-card word-card">
+          <div class="control-word" id="control-word">—</div>
+          <p class="word-meta" id="word-meta">Waiting for a session</p>
+          <p class="source-status" id="source-status" role="status"></p>
+          <p class="source-status" id="session-reset-status" role="status"></p>
+          <button class="control-button" id="admin-take-source" type="button" hidden>Run this session from Admin</button>
+
+          <div class="verdict-row" aria-label="Admin judging controls">
+            <button class="verdict-button correct" type="button" data-verdict="correct">✓ Letter correct</button>
+            <button class="verdict-button undo" id="undo-letter-button" type="button" data-action="undo">⌫ Backspace</button>
+            <button class="verdict-button incorrect" type="button" data-verdict="incorrect">× Letter incorrect</button>
+          </div>
+
+          <div class="remote-action-row">
+            <button class="control-button" id="new-word-button" type="button">Call new word</button>
+            <button class="control-button" id="word-visibility-button" type="button">Reveal in Study</button>
+            <button class="control-button" id="pool-launcher" type="button">Remaining words</button>
+          </div>
+
+          <label class="category-control">Category
+            <select id="admin-category" aria-label="Category">
+              <option value="4TH-5TH">4TH–5TH</option><option value="6TH-7TH">6TH–7TH</option>
+              <option value="JUNIOR">JUNIOR</option><option value="SENIOR">SENIOR</option>
+            </select>
+          </label>
+          <div class="difficulty-row" aria-label="Difficulty controls">
+            <button class="control-button" type="button" data-difficulty="easy">Easy</button>
+            <button class="control-button" type="button" data-difficulty="medium">Medium</button>
+            <button class="control-button" type="button" data-difficulty="hard">Hard</button>
+            <button class="control-button" type="button" data-difficulty="tiebreaker" hidden>Tiebreaker</button>
+          </div>
+
+          <div class="judge-result" id="judge-result">
+            <strong>Awaiting judge decisions</strong>
+            <span>No judge has submitted a decision for this word yet.</span>
+            <div class="judge-vote-list admin-judge-list" id="judge-vote-list"></div>
+          </div>
+
+          <div class="remote-action-row" aria-label="Word result">
+            <button class="control-button incorrect" id="presenter-incorrect" type="button">Incorrect animation</button>
+            <button class="control-button correct" id="presenter-correct" type="button">Correct animation</button>
+          </div>
+        </section>
+
+        <aside class="info-stack">
+          <section class="control-card info-card">
+            <h2>Narrow AmE pronunciation</h2>
+            <p class="info-value" id="ipa-value">—</p>
+          </section>
+          <section class="control-card info-card">
+            <h2>Definition</h2>
+            <p class="info-value" id="definition-value">—</p>
+          </section>
+          <section class="control-card info-card">
+            <h2>Example sentence</h2>
+            <p class="info-value" id="example-value">—</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+  </div>
+
+  <section class="pool-modal hidden" id="pool-modal" aria-modal="true" role="dialog">
+    <div class="pool-panel">
+      <div class="pool-panel-header">
+        <h2>Remaining words</h2>
+        <button class="control-button" id="pool-close" type="button">Close</button>
+      </div>
+      <div class="pool-columns" id="pool-columns"></div>
+    </div>
+  </section>
+
+
+
+
+
+
+
+
+
+
+<script src="../client-config.js"></script><script src="product-boot.js"></script><script>BeeProduct.start([{"src": "js/cloud.js?v=20261023-judgelives27"}, {"src": "js/button-feedback.js?v=20261015-sync5"}, {"src": "js/session-engine.js?v=20261022-history25"}, {"src": "js/admin-source.js?v=20261023-judgelives27"}, {"src": "js/control-view.js?v=20261023-judgelives27"}, {"src": "js/screen-model.js?v=20261022-history25"}, {"src": "js/screen-camera.js?v=20261019-cuts21"}, {"src": "js/roster-history.js?v=20261022-history25"}, {"src": "js/screen-admin.js?v=20261023-judgelives27"}]);</script></body>
+</html>
