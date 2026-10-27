@@ -7,7 +7,7 @@ window.BeeClient=(()=>{
  const setToken=value=>localStorage.setItem(authKey,value);
  const clearToken=()=>localStorage.removeItem(authKey);
  async function request(path,body,access=token()){
-  const headers=new Headers();if(access)headers.set('X-Bee-Access',access);
+  const headers=new Headers();if(access)headers.set('X-Requested-With',access);
   if(body!==undefined)headers.set('Content-Type','application/json');
   const response=await fetch(apiBase+path,{credentials:'omit',headers,...(body!==undefined?{method:'POST',body:JSON.stringify(body)}:{})});
   const data=await response.json().catch(()=>({success:false,error:'The server did not respond. Please try again.'}));
