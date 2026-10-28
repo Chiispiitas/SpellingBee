@@ -435,11 +435,9 @@
       if (category) category.value = presenter.level || (window.BeeProduct.settings.categories[0]);
       const owns = Boolean(source?.active && source.code === sessionCode);
       const reset = document.getElementById("reset-admin-session");
-      if (reset) { reset.disabled = !owns || resetting; reset.title = owns ? "Reset used words, judging and show progress; keep the session code, roster and lives" : "Use Run this session from Admin before resetting"; }
+      if (reset) { reset.disabled = !owns || resetting; reset.title = owns ? "Reset used words, judging and show progress; keep the session code, roster and lives" : "Connect to the school session before resetting"; }
       const status = document.getElementById("source-status");
       if (status) status.textContent = owns ? `Admin is running session ${sessionCode}` : presenter.sourceRole === "admin" ? `Session ${sessionCode} is running in another Admin view` : `Start session ${sessionCode} from Admin`;
-      const takeover = document.getElementById("admin-take-source");
-      if (takeover) takeover.hidden = owns;
 
     }
 
@@ -871,11 +869,11 @@
       const rows = await Cloud.fetchRows(code, { command: role === "remote" });
       let found = Cloud.presenterState(rows);
       if (found?.screenCameraPreview) throw new Error("Use the shared session code, not a camera-preview code.");
-      if (found && found.sourceRole !== "admin") throw new Error("Start / resume this session from Admin before connecting.");
-      if (!found) throw new Error(role === "remote" ? "No session found. Use Start / resume from Admin to create it." : "No session is using that code.");
+      if (found && found.sourceRole !== "admin") throw new Error("Set up this session in the workspace before connecting.");
+      if (!found) throw new Error(role === "remote" ? "No session found. Create the school session in your workspace first." : "No session is using that code.");
       if (role === "remote" && source) {
         if (source.active && source.code !== code) source.stop();
-        if (source.owns(found) && !source.active) found = await source.start(code, found);
+        if (!source.active) {try{found = await source.start(code, found);}catch(error){source.stop();throw error;}}
       }
 
       unsubscribeCloud();
@@ -1164,7 +1162,7 @@
   function sendRemoteCommand(commandType, value = "", button) {
     if (role !== "remote" || !sessionCode || !presenter) return Promise.resolve(false);
     if (source?.active) return runSourceAction(commandType, value, button);
-    Feedback?.set(button, "error", "Run this session from this Admin to change words.");
+    Feedback?.set(button, "error", "Connect to the school session from this Admin to change words.");
     return Promise.resolve(false);
   }
 
@@ -1261,22 +1259,6 @@
     const state = await window.getSpellingWordSnapshot(code);
     if (!state?.usedWords?.[key]?.includes(word)) throw new Error("Word pool save was not confirmed. Refresh Admin if it is hosting this session, then retry.");
   };
-  async function startAdminSession() {
-    if (!source) return;
-    const start = document.getElementById("start-admin-session"), takeover = document.getElementById("admin-take-source");
-    const code = cleanCodeInput() || String(window.crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000);
-    codeInput.value = code; start.disabled = true; joinButton.disabled = true; if (takeover) takeover.disabled = true;
-    setJoinStatus("Starting Admin session…");
-    try {
-      const previous = await Cloud.fetchPresenter(code);
-      if (previous?.screenBroadcast || previous?.screenCameraPreview) throw new Error("That code belongs to an audience screen. Choose a different code.");
-      await source.start(code, previous);
-      await joinSession();
-    } catch (error) { source.stop(); setJoinStatus(error.message, true); setConnection("Session not confirmed", "error"); }
-    finally { start.disabled = false; joinButton.disabled = false; if (takeover) takeover.disabled = false; }
-  }
-  document.getElementById("start-admin-session")?.addEventListener("click", startAdminSession);
-  document.getElementById("admin-take-source")?.addEventListener("click", startAdminSession);
   document.getElementById("reset-admin-session")?.addEventListener("click", async event => {
     if (resetting || !source?.active || source.code !== sessionCode) return;
     if (!window.confirm(`Reset session ${sessionCode}?\n\nClear ALL used-word history and judging, and draw a fresh word. Return the audience screen to Standby, Round 1, and clear finalist/podium assignments.\n\nKeep the same session code, contestant list, remaining lives, category, difficulty and screen mode. This cannot be undone.`)) return;

@@ -1,5 +1,6 @@
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let schoolSession=null;
 let context,settings,words=[],dirtyWords=false,dirtyBrand=false,currentPage='overview',wordLoading=false;
 let categorySavePromise=Promise.resolve();
 let loadedLevel='4TH-5TH',loadedDifficulty='easy';
@@ -53,7 +54,8 @@ async function showStudio(){
  settings=context.settings;$('login-view').hidden=true;$('studio-view').hidden=false;
  $('sidebar-school').textContent=settings.schoolName;$('sidebar-user').textContent=context.account.username;$('overview-school').textContent=settings.schoolName;
  $('owner-nav').hidden=context.role!=='owner';fillBrand();fillCategories();
- const saved=sessionStorage.getItem('bee-studio-code:'+context.account.id);if(saved)$('launch-code').value=saved;updateAdminLink();
+ schoolSession=(await api('school-session')).schoolSession;
+ const saved=sessionStorage.getItem('bee-studio-code:'+context.account.id);if(!schoolSession&&saved)$('launch-code').value=saved;renderSchoolSession();
 }
 $('login-form').addEventListener('submit',event=>{
  event.preventDefault();$('login-status').textContent='';const button=event.submitter;
@@ -63,11 +65,19 @@ $('login-form').addEventListener('submit',event=>{
 $('show-password').onclick=()=>{const input=$('login-form').elements.password;input.type=input.type==='password'?'text':'password';$('show-password').textContent=input.type==='password'?'Show':'Hide';};
 $('logout').onclick=async()=>{if(dirtyWords&&!confirm('You have unsaved word-list changes. Sign out anyway?'))return;try{await appearanceAutosave.flush();await api('logout',{});BeeClient.clearToken();location.reload();}catch(e){notice(e.message,true);}};
 document.querySelectorAll('[data-nav],[data-go]').forEach(el=>el.onclick=()=>openPage(el.dataset.nav||el.dataset.go));
-function updateAdminLink(){const code=$('launch-code').value.replace(/\D/g,'').slice(0,16);$('launch-code').value=code;$('open-admin').href='arena/admin.html?session='+code+'&v='+BeeClient.release;if(context)sessionStorage.setItem('bee-studio-code:'+context.account.id,code);}
+function updateAdminLink(){const code=$('launch-code').value.replace(/\D/g,'').slice(0,16);$('launch-code').value=code;if(context&&!schoolSession)sessionStorage.setItem('bee-studio-code:'+context.account.id,code);}
+function renderSchoolSession(){
+ const ready=!!schoolSession?.ready;$('launch-code').readOnly=!!schoolSession;if(schoolSession)$('launch-code').value=schoolSession.code;
+ $('make-links').textContent=ready?'Get judge & screen links':schoolSession?'Finish session setup':'Create school session';
+ $('school-session-status').textContent=ready?'Your school uses this one session. Open Admin to connect, or reset its progress for another competition.':schoolSession?'Finish creating this session in the workspace before connecting from Admin.':'Choose the code once. Your school will keep this one session for its competitions.';
+ $('open-admin').setAttribute('aria-disabled',String(!ready));if(ready)$('open-admin').href='arena/admin.html?session='+schoolSession.code+'&v='+BeeClient.release;else $('open-admin').removeAttribute('href');
+}
 $('launch-code').oninput=updateAdminLink;
 $('make-links').onclick=()=>run($('make-links'),async()=>{
- const {links}=await api('links',{code:$('launch-code').value});$('judge-link').value=links.judge;$('screen-link').value=links.screen+'&view=stage';$('launch-stage').href=links.screen+'&view=stage';$('launch-camera').href=links.screen+'&view=camera';$('share-links').hidden=false;notice('Access links are ready. Start the same session from competition Admin.');
-},'Creating links…');
+ await appearanceAutosave.flush();
+ if(!schoolSession?.ready){schoolSession=(await api('school-session',{code:$('launch-code').value})).schoolSession;renderSchoolSession();}
+ const {links}=await api('links',{code:schoolSession.code});$('judge-link').value=links.judge;$('screen-link').value=links.screen+'&view=stage';$('launch-stage').href=links.screen+'&view=stage';$('launch-camera').href=links.screen+'&view=camera';$('share-links').hidden=false;notice('School session ready. Open Admin to connect to it.');
+},schoolSession?.ready?'Getting links…':'Creating session…').then(async()=>{if(!schoolSession)try{schoolSession=(await api('school-session')).schoolSession;}catch{}renderSchoolSession();});
 document.querySelectorAll('[data-copy]').forEach(el=>el.onclick=()=>run(el,async()=>{await navigator.clipboard.writeText($(el.dataset.copy).value);notice('Link copied.');},'Copying…'));
 $('brand-form').addEventListener('submit',e=>e.preventDefault());
 $('brand-form').addEventListener('input',event=>{if(event.target.type!=='file')changeAppearance();});

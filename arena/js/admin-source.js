@@ -12,6 +12,7 @@
     }
     owns(state) { return Boolean(state?.sourceRole === "admin" && state.sourceId === this.owner); }
     async start(code, previous) {
+      if(!previous||previous.sourceRole!=="admin")throw new Error("Create the school session in the workspace first.");
       this.stop(); this.code = code; this.active = true;
       const generation = this.generation;
       this.savedRevision = 0; this.retryAt = 0; this.nextAt = 0;
@@ -37,7 +38,7 @@
       this.waiters = [];
     }
     commit(urgent = false) {
-      if (!this.active) throw new Error("Run this session from Admin first.");
+      if (!this.active) throw new Error("Connect to the school session from Admin first.");
       this.state = { ...this.state, sourceRevision: Number(this.state.sourceRevision || 0) + 1 };
       this.pending = { state: M.copy(this.state), urgent: urgent || Boolean(this.pending?.urgent) };
       this.lastInput = Date.now(); this.onState(M.copy(this.state));

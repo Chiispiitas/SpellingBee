@@ -41,6 +41,7 @@ window.BeeProduct = (()=>{
  async function start(scripts){
    try{
     const ctx=await api('context');settings=ctx.settings;scope='spelling-bee-app:'+ctx.account.id+':';window.BeeProduct.settings=settings;
+    if(location.pathname.endsWith('/arena/admin.html')){const registered=(await api('school-session')).schoolSession;if(!registered?.ready)throw new Error('Create your school session in the workspace before opening Admin.');params.set('session',registered.code);history.replaceState(null,'',location.pathname+'?'+params.toString());}
     BeeAppearance.apply(settings);document.title=settings.schoolName+' · '+document.title;document.querySelectorAll('.arena').forEach(el=>el.remove());
     document.querySelectorAll('#pool-select,#admin-category').forEach(select=>{select.replaceChildren(...settings.categories.map(id=>new Option(settings.categoryNames?.[id]||id,id)));});
     if(ctx.role==='screen'&&!location.pathname.endsWith('screen.html'))throw new Error('Open the screen link provided by your school.');

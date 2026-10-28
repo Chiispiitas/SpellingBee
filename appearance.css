@@ -25,3 +25,4 @@ html[data-workspace=light] .sidebar{background:#e7ebee}
 html[data-workspace=light] .topbar{background:#31485e;color:#f5f7fa;border-color:#31485e}
 html[data-workspace=light] .sidebar nav button.active{border-left:3px solid var(--ui-accent)}
 #appearance-save-status{font-size:12px;min-width:145px;text-align:right}#appearance-save-status[data-state=error]{color:var(--ui-err,#9a2936)}
+.primary[aria-disabled=true]{opacity:.45;pointer-events:none;cursor:default}
