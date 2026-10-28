@@ -52,7 +52,7 @@ $('login-form').addEventListener('submit',event=>{
 $('show-password').onclick=()=>{const input=$('login-form').elements.password;input.type=input.type==='password'?'text':'password';$('show-password').textContent=input.type==='password'?'Show':'Hide';};
 $('logout').onclick=()=>{if((dirtyWords||dirtyBrand)&&!confirm('You have unsaved changes. Sign out anyway?'))return;api('logout',{}).then(()=>{BeeClient.clearToken();location.reload();}).catch(e=>notice(e.message,true));};
 document.querySelectorAll('[data-nav],[data-go]').forEach(el=>el.onclick=()=>openPage(el.dataset.nav||el.dataset.go));
-function updateAdminLink(){const code=$('launch-code').value.replace(/\D/g,'').slice(0,16);$('launch-code').value=code;$('open-admin').href='arena/admin.html?session='+code;if(context)sessionStorage.setItem('bee-studio-code:'+context.account.id,code);}
+function updateAdminLink(){const code=$('launch-code').value.replace(/\D/g,'').slice(0,16);$('launch-code').value=code;$('open-admin').href='arena/admin.html?session='+code+'&v='+BeeClient.release;if(context)sessionStorage.setItem('bee-studio-code:'+context.account.id,code);}
 $('launch-code').oninput=updateAdminLink;
 $('make-links').onclick=()=>run($('make-links'),async()=>{
  const {links}=await api('links',{code:$('launch-code').value});$('judge-link').value=links.judge;$('screen-link').value=links.screen+'&view=stage';$('launch-stage').href=links.screen+'&view=stage';$('launch-camera').href=links.screen+'&view=camera';$('share-links').hidden=false;notice('Access links are ready. Start the same session from competition Admin.');

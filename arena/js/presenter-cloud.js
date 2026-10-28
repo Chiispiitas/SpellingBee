@@ -118,7 +118,7 @@
   }
 
   function updateViewLinks() {
-    const suffix = sessionCode ? `?session=${encodeURIComponent(sessionCode)}` : "";
+    const suffix = `?v=${window.BeeClient.release}`+(sessionCode ? `&session=${encodeURIComponent(sessionCode)}` : "");
     if (judgeLink) judgeLink.href = `judge.html${suffix}`;
     if (adminLink) adminLink.href = `admin.html${suffix}`;
   }

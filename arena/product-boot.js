@@ -18,7 +18,7 @@ window.BeeProduct = (()=>{
  const storage={getItem:k=>localStorage.getItem(scope+k),setItem:(k,v)=>localStorage.setItem(scope+k,v),removeItem:k=>localStorage.removeItem(scope+k)};
  const Channel=typeof BroadcastChannel==='function'?class extends BroadcastChannel{constructor(name){super(scope+name);}}:class{postMessage(){}addEventListener(){}removeEventListener(){}close(){}};
  const escape=value=>String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- function standby(){return `<div class="centered-layout standby-layout"><div class="standby-rotation"><div class="standby-set standby-school" data-standby="school"><img class="standby-logo" ${settings.logo?'':'hidden'} src="${escape(settings.logo||'')}" alt="School logo"><h1 class="headline">${escape(settings.schoolName)}</h1>${settings.tagline?`<p>${escape(settings.tagline)}</p>`:''}</div><div class="standby-set standby-partners" data-standby="partners">${(settings.partners||[]).map(src=>`<img class="standby-partner-logo" src="${escape(src)}" alt="Partner logo">`).join('')}</div></div></div>`;}
+ function standby(){return `<div class="centered-layout standby-layout"><div class="standby-rotation"><div class="standby-set standby-school" data-standby="school">${settings.logo?`<img class="standby-logo" src="${escape(settings.logo)}" alt="School logo">`:''}<h1 class="headline">${escape(settings.schoolName)}</h1>${settings.tagline?`<p>${escape(settings.tagline)}</p>`:''}</div><div class="standby-set standby-partners" data-standby="partners">${(settings.partners||[]).map(src=>`<img class="standby-partner-logo" src="${escape(src)}" alt="Partner logo">`).join('')}</div></div></div>`;}
  function brand(){
    const r=document.documentElement;BeeAppearance.apply(settings);
    r.style.setProperty('--product-font',{modern:'system-ui, sans-serif',classic:'Georgia, serif',rounded:'system-ui, sans-serif'}[settings.font]);
@@ -28,7 +28,7 @@ window.BeeProduct = (()=>{
    document.querySelectorAll('.school-brand strong,[data-product-school]').forEach(el=>el.textContent=settings.schoolName);
    document.querySelectorAll('.event-bug>span').forEach(el=>el.textContent=settings.eventName);
    document.querySelectorAll('.control-brand').forEach(el=>{const img=el.querySelector('img');img.hidden=!settings.logo;if(settings.logo)img.src=settings.logo;if(!el.querySelector('.product-brand-name')){const name=document.createElement('span');name.className='product-brand-name';name.textContent=settings.schoolName;el.append(name);}});
-   if(!document.getElementById('product-back')&&!location.pathname.endsWith('screen.html')){const a=document.createElement('a');a.id='product-back';a.href=BeeClient.frontendBase;a.textContent='← Dashboard';document.body.append(a);}
+   if(!document.getElementById('product-back')&&!location.pathname.endsWith('screen.html')){const a=document.createElement('a');a.id='product-back';a.href=BeeClient.frontendBase+'?v='+BeeClient.release;a.textContent='← Dashboard';document.body.append(a);}
  }
  async function speak(word,level,difficulty){
    speechSynthesis.cancel();const row=(await wordList(level,difficulty)).find(w=>w.word===word.toLowerCase());
@@ -46,7 +46,7 @@ window.BeeProduct = (()=>{
     if(ctx.code&&!params.get('session')){params.set('session',ctx.code);history.replaceState(null,'',location.pathname+'?'+params.toString());}
     for(const script of scripts){const el=document.createElement('script');if(script.src){el.src=script.src;await new Promise((resolve,reject)=>{el.onload=resolve;el.onerror=()=>reject(new Error('The competition could not load. Please refresh.'));document.body.append(el);});}else{el.textContent=script.code;document.body.append(el);}}
     brand();
-   }catch(e){document.body.replaceChildren();const main=document.createElement('main');main.className='product-access-error';const h=document.createElement('h1');h.textContent='Spelling Bee App';const p=document.createElement('p');p.textContent=e.message;const a=document.createElement('a');a.href=BeeClient.frontendBase;a.textContent='Go to sign in';main.append(h,p,a);document.body.append(main);}
+   }catch(e){document.body.replaceChildren();const main=document.createElement('main');main.className='product-access-error';const h=document.createElement('h1');h.textContent='Spelling Bee App';const p=document.createElement('p');p.textContent=e.message;const a=document.createElement('a');a.href=BeeClient.frontendBase+'?v='+BeeClient.release;a.textContent='Go to sign in';main.append(h,p,a);document.body.append(main);}
  }
  const categoryLabel=id=>settings.categoryNames?.[id]||id;
  return {start,storage,Channel,settings,standby,speak,categoryLabel};

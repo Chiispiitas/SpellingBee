@@ -441,7 +441,7 @@
       const takeover = document.getElementById("admin-take-source");
       if (takeover) takeover.hidden = owns;
       const studyLink = document.getElementById("admin-study-link");
-      if (studyLink) studyLink.href = `index.html?session=${encodeURIComponent(sessionCode)}`;
+      if (studyLink) studyLink.href = `index.html?session=${encodeURIComponent(sessionCode)}&v=${window.BeeClient.release}`;
       const visibilityButton = document.getElementById("word-visibility-button");
       if (visibilityButton) {
         const hidden = presenter.hiddenMode !== false;

@@ -7,7 +7,7 @@
   panel.setAttribute("aria-label", "Audience screen controls");
   panel.innerHTML = `
     <header class="director-header"><div><h2>Screen View · Show control</h2><span class="director-live" id="director-live">Connecting screen…</span></div><div class="director-actions"><a class="director-button" id="open-screen" target="_blank" rel="noopener">Screen without camera ↗</a><a class="director-button" id="open-camera-screen" target="_blank" rel="noopener">Screen with camera ↗</a><button type="button" class="standby-button" id="screen-standby">Return to standby</button></div></header>
-    <div class="director-top"><div><div class="preview-label">PREVIEW · OFF AIR</div><iframe class="director-preview" id="screen-preview" src="screen.html?preview=1" title="Audience scene preview"></iframe><div class="director-preview-note"><span id="preview-label">Standby</span><span>School display · 16:9</span></div><p class="camera-preview-note" id="preview-camera-note" hidden></p><div class="director-take-row"><button class="take-live" type="button" id="screen-take">Take scene live</button><button type="button" id="next-speller">Prepare next contestant</button></div></div><div><h3>Scenes</h3><div class="scene-buttons" id="screen-scenes"></div></div></div>
+    <div class="director-top"><div><div class="preview-label">PREVIEW · OFF AIR</div><iframe class="director-preview" id="screen-preview" src="screen.html?preview=1&v=${window.BeeClient.release}" title="Audience scene preview"></iframe><div class="director-preview-note"><span id="preview-label">Standby</span><span>School display · 16:9</span></div><p class="camera-preview-note" id="preview-camera-note" hidden></p><div class="director-take-row"><button class="take-live" type="button" id="screen-take">Take scene live</button><button type="button" id="next-speller">Prepare next contestant</button></div></div><div><h3>Scenes</h3><div class="scene-buttons" id="screen-scenes"></div></div></div>
     <div class="director-fields">
       <label>Current contestant<select id="screen-current"></select></label>
       <label>Round / stage name<input id="screen-round" maxlength="60" value="Round 1"></label>
@@ -303,8 +303,8 @@
         const saved = await Cloud.writeState({ sessionCode: broadcastCode, role: "presenter", state: { screenBroadcast: true, broadcast: live } });
         if (!saved.session?.screenBroadcast) throw new Error("The server did not acknowledge the screen session.");
       }
-      $("open-screen").href = `screen.html?session=${sourceCode}&view=stage`;
-      $("open-camera-screen").href = `screen.html?session=${sourceCode}&view=camera`;
+      $("open-screen").href = `screen.html?session=${sourceCode}&view=stage&v=${window.BeeClient.release}`;
+      $("open-camera-screen").href = `screen.html?session=${sourceCode}&view=camera&v=${window.BeeClient.release}`;
       $("broadcast-code").textContent = sourceCode;
       $("director-live").textContent = `ON AIR · ${M.scenes.find(([key]) => key === live.scene)?.[1]}`;
       fillFields(); saveHistory(); setBusy(false); status("Screen connected. Open the audience screen on the stage display.");
