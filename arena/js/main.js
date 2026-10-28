@@ -40,25 +40,6 @@ let marks = [];
 let ptr = 0;
 let finalizedFeedbackOutcome = null;
 
-// Shared judgement clock. This changes only when a human changes letter
-// progress locally, or when a newer remote judgement is explicitly adopted.
-// Periodic cloud publishes do NOT advance it.
-let judgementRevision = 0;
-let judgementSource = "presenter";
-let judgementUpdatedAt = 0;
-
-function resetJudgementClock() {
-    judgementRevision = 0;
-    judgementSource = "presenter";
-    judgementUpdatedAt = 0;
-}
-
-function recordPresenterJudgementInput() {
-    judgementRevision = Math.max(0, Number(judgementRevision) || 0) + 1;
-    judgementSource = "presenter";
-    judgementUpdatedAt = Date.now();
-}
-
 // DOM references
 const elWord = document.getElementById('word');
 const elSecretWord = document.getElementById('secret-word');
@@ -254,7 +235,6 @@ function resetMarks() {
     marks = new Array(current.length).fill('pending');
     ptr = 0;
     finalizedFeedbackOutcome = null;
-    resetJudgementClock();
     advancePtr();
     renderWord();
 }
@@ -271,7 +251,7 @@ function finalizeWordForFeedback(kind) {
         // A correct Admin verdict completes the whole spelling in green.
         if (kind === 'correct') return 'ok';
 
-        // On incorrect, preserve any letter the Presenter already marked red,
+        // On incorrect, preserve any letter you already marked red,
         // but neutrally reveal all unfinished letters instead of leaving them pending.
         return marks[index] === 'err' ? 'err' : 'reveal';
     });
@@ -281,7 +261,6 @@ function finalizeWordForFeedback(kind) {
 }
 
 function toggleWordMode() {
-    if (window.spellingStudyFollowing) return;
     hiddenMode = !hiddenMode;
     renderWord();
 }
@@ -314,19 +293,9 @@ function playCorrectAudio() {
 /* ==============================================
    Letter Progress (O / P / Next Letter / Backspace)
 ============================================== */
-function requestPresenterCloudSync() {
-    if (typeof window.requestSpellingPresenterSync === 'function') {
-        window.requestSpellingPresenterSync();
-    }
-}
-
-function mark(type, syncCloud = true) {
+function mark(type) {
     if (!current || ptr >= current.length) return;
     finalizedFeedbackOutcome = null;
-
-    // syncCloud=false means this state came from Admin and is replication,
-    // not a new Presenter input. Never steal last-input authority for replicas.
-    if (syncCloud) recordPresenterJudgementInput();
 
     if (!/[A-Za-z]/.test(current[ptr])) {
         advancePtr();
@@ -338,7 +307,6 @@ function mark(type, syncCloud = true) {
     ptr++;
     advancePtr();
     renderWord();
-    if (syncCloud) requestPresenterCloudSync();
 
     if (!isAllMarked()) return;
 
@@ -364,7 +332,6 @@ function revealNextLetter() {
 function undo() {
     if (!current) return;
     finalizedFeedbackOutcome = null;
-    recordPresenterJudgementInput();
 
     do {
         if (ptr <= 0) break;
@@ -376,7 +343,6 @@ function undo() {
     }
 
     renderWord();
-    requestPresenterCloudSync();
 }
 
 function isAllMarked() {
@@ -513,7 +479,7 @@ async function changeDifficulty(level) {
 
     try {
         const words = await loadWordlist();
-        if (generation !== poolLoadGeneration || window.spellingStudyFollowing) return;
+        if (generation !== poolLoadGeneration) return;
         const used = usedWordsByPool.get(currentPoolKey()) || new Set();
         pool = words.filter(word => !used.has(word));
 
@@ -528,7 +494,7 @@ async function changeDifficulty(level) {
         btnNext.disabled = false;
         drawRandom();
     } catch (err) {
-        if (generation !== poolLoadGeneration || window.spellingStudyFollowing) return;
+        if (generation !== poolLoadGeneration) return;
         console.error(err);
         current = null;
         elWord.textContent = `Could not load ${WORDLIST_PATH}`;
@@ -541,7 +507,6 @@ async function changeDifficulty(level) {
    Keyboard Bindings
 ============================================== */
 function onKey(e) {
-    if (window.spellingStudyFollowing && e.code !== 'Space') { if (['o', 'O', 'p', 'P', 'n', 'N', 'Backspace'].includes(e.key)) e.preventDefault(); return; }
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
 
     if (e.key === 'o' || e.key === 'O') {
@@ -633,8 +598,7 @@ if (document.fonts?.ready) {
 (async function init() {
     try {
         const words = await loadWordlist();
-        if (window.spellingStudyFollowing) return;
-        currentLevel = elPoolSelect ? elPoolSelect.value : currentLevel;
+            currentLevel = elPoolSelect ? elPoolSelect.value : currentLevel;
         const used = usedWordsByPool.get(currentPoolKey()) || new Set();
         pool = words.filter(word => !used.has(word));
 

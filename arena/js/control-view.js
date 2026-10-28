@@ -437,17 +437,10 @@
       const reset = document.getElementById("reset-admin-session");
       if (reset) { reset.disabled = !owns || resetting; reset.title = owns ? "Reset used words, judging and show progress; keep the session code, roster and lives" : "Use Run this session from Admin before resetting"; }
       const status = document.getElementById("source-status");
-      if (status) status.textContent = owns ? `Admin is running session ${sessionCode}` : presenter.sourceRole === "admin" ? `Session ${sessionCode} is running in another Admin view` : `Connected to Study session ${sessionCode}`;
+      if (status) status.textContent = owns ? `Admin is running session ${sessionCode}` : presenter.sourceRole === "admin" ? `Session ${sessionCode} is running in another Admin view` : `Start session ${sessionCode} from Admin`;
       const takeover = document.getElementById("admin-take-source");
       if (takeover) takeover.hidden = owns;
-      const studyLink = document.getElementById("admin-study-link");
-      if (studyLink) studyLink.href = `index.html?session=${encodeURIComponent(sessionCode)}&v=${window.BeeClient.release}`;
-      const visibilityButton = document.getElementById("word-visibility-button");
-      if (visibilityButton) {
-        const hidden = presenter.hiddenMode !== false;
-        visibilityButton.textContent = hidden ? "Reveal in Study" : "Hide in Study";
-        visibilityButton.dataset.nextVisibility = hidden ? "reveal" : "hide";
-      }
+
     }
 
     document.querySelectorAll("[data-difficulty]").forEach(button => {
@@ -467,7 +460,7 @@
 
     if (role === "remote") {
       const locked = presenter.sourceRole === "admin" && !source?.active;
-      document.querySelectorAll("#new-word-button,#word-visibility-button,#admin-category,[data-difficulty],#presenter-correct,#presenter-incorrect").forEach(control => {
+      document.querySelectorAll("#new-word-button,#admin-category,[data-difficulty],#presenter-correct,#presenter-incorrect").forEach(control => {
         if (locked || control.dataset.sourceLocked === "true") { control.disabled = locked; control.dataset.sourceLocked = String(locked); }
       });
     }
@@ -509,7 +502,7 @@
     } else if (incorrect.length) {
       host.classList.add("review");
       host.querySelector("strong").textContent = "Review required";
-      host.querySelector("span").textContent = `${incorrect.length} judge${incorrect.length === 1 ? "" : "s"} marked at least one letter as incorrect. Discuss before sending presenter feedback.`;
+      host.querySelector("span").textContent = `${incorrect.length} judge${incorrect.length === 1 ? "" : "s"} marked at least one letter as incorrect. Discuss before choosing the audience result.`;
     } else if (pending.length === 0 && correct.length === votes.length) {
       host.classList.add("correct");
       host.querySelector("strong").textContent = "Judges concluded correct";
@@ -767,7 +760,7 @@
       if (registeredJudgeSession !== sessionCode) publishJudgeState({ increment: true });
     }
     renderPresenterState();
-    setConnection(Cloud.isFresh(presenter, 75000) ? (presenter.sourceRole === "admin" ? "Admin online" : "Study online") : "Session stale", Cloud.isFresh(presenter, 75000) ? "online" : "stale");
+    setConnection(Cloud.isFresh(presenter, 75000) ? (presenter.sourceRole === "admin" ? "Admin online" : "Session online") : "Session stale", Cloud.isFresh(presenter, 75000) ? "online" : "stale");
   }
 
   async function refreshPresenterOnly() {
@@ -878,6 +871,7 @@
       const rows = await Cloud.fetchRows(code, { command: role === "remote" });
       let found = Cloud.presenterState(rows);
       if (found?.screenCameraPreview) throw new Error("Use the shared session code, not a camera-preview code.");
+      if (found && found.sourceRole !== "admin") throw new Error("Start / resume this session from Admin before connecting.");
       if (!found) throw new Error(role === "remote" ? "No session found. Use Start / resume from Admin to create it." : "No session is using that code.");
       if (role === "remote" && source) {
         if (source.active && source.code !== code) source.stop();
@@ -912,7 +906,7 @@
       renderPresenterState();
       renderJudgeAggregate(rows);
       setConnection(
-        Cloud.isFresh(presenter, 75000) ? (presenter.sourceRole === "admin" ? "Admin online" : "Study online") : "Session stale",
+        Cloud.isFresh(presenter, 75000) ? (presenter.sourceRole === "admin" ? "Admin online" : "Session online") : "Session stale",
         Cloud.isFresh(presenter, 75000) ? "online" : "stale"
       );
 
@@ -1170,83 +1164,8 @@
   function sendRemoteCommand(commandType, value = "", button) {
     if (role !== "remote" || !sessionCode || !presenter) return Promise.resolve(false);
     if (source?.active) return runSourceAction(commandType, value, button);
-    if (presenter.sourceRole === "admin") {
-      Feedback?.set(button, "error", "Run this session from this Admin to change words.");
-      return Promise.resolve(false);
-    }
-
-    if (button) { button.disabled = true; Feedback?.set(button, "saving", "Sending…"); }
-    const snapshotSessionCode = sessionCode;
-    const snapshotPresenter = {
-      level: presenter.level || "",
-      difficulty: presenter.difficulty || "",
-      word: presenter.word || "",
-      wordToken: presenter.wordToken || "",
-      wordSequence: Number(presenter.wordSequence || 0)
-    };
-
-    commandPublishChain = commandPublishChain
-      .catch(() => {})
-      .then(async () => {
-        // New Word / feedback / visibility must come after the latest judgement,
-        // but rapid ✓/×/Backspace never wait on this slower control-command path.
-        await drainAdminWordState();
-
-        // Letter taps must not overwrite a command before Presenter reads it.
-        // Hold any new full-word snapshot until this command is acknowledged.
-        remoteControlCommandActive = true;
-        try {
-          commandSeq += 1;
-          const seq = commandSeq;
-
-          const saved = await Cloud.writeState({
-            sessionCode: snapshotSessionCode,
-            role: "remote",
-            actorId: "main",
-            state: {
-              startedAt: new Date().toISOString(),
-              ...snapshotPresenter,
-              commandSeq: seq,
-              commandType,
-              ...(commandType === "contestant" ? { currentContestant: Cloud.contestantInfo(JSON.parse(value)) } : {}),
-              value
-            }
-          });
-
-          const savedSeq = Number(saved?.command?.commandSeq ?? seq);
-          if (savedSeq !== seq) {
-            commandSeq = Math.max(commandSeq, savedSeq);
-            throw new Error("Command superseded before delivery.");
-          }
-
-          const acknowledged = await waitForPresenterCommandAck(
-            seq,
-            ["difficulty", "category", "new-word", "contestant"].includes(commandType) ? "" : snapshotPresenter.wordToken
-          );
-          if (!acknowledged) throw new Error("Presenter did not acknowledge command.");
-
-          if (commandType === "feedback") window.dispatchEvent(new CustomEvent("spelling-feedback-confirmed", {
-            detail: { sessionCode: snapshotSessionCode, wordToken: snapshotPresenter.wordToken, word: snapshotPresenter.word, verdict: value }
-          }));
-
-          setConnection("Command sent", "online");
-          window.setTimeout(refreshPresenterOnly, 20);
-          return true;
-        } finally {
-          remoteControlCommandActive = false;
-          if (pendingAdminWordState && !adminWordStateWriteBusy) flushPendingAdminWordState();
-        }
-      })
-      .catch(error => {
-        setConnection("Command failed", "error");
-        return false;
-      });
-
-    const operation = commandPublishChain;
-    operation.then(ok => {
-      if (button) { button.disabled = false; Feedback?.set(button, ok ? "saved" : "error", ok ? "Applied in Study" : "Not confirmed · check the session before retrying"); }
-    });
-    return operation;
+    Feedback?.set(button, "error", "Run this session from this Admin to change words.");
+    return Promise.resolve(false);
   }
 
   async function openPools() {
@@ -1330,9 +1249,9 @@
     const contestant = Cloud.contestantInfo(value);
     const current = await window.getSpellingWordSnapshot(code);
     if (JSON.stringify(Cloud.contestantInfo(current?.currentContestant)) === JSON.stringify(contestant)) return;
-    if (!await sendRemoteCommand("contestant", JSON.stringify(contestant))) throw new Error("Judge lives could not sync. Run the source from this Admin or refresh Study.");
+    if (!await sendRemoteCommand("contestant", JSON.stringify(contestant))) throw new Error("Judge lives could not sync. Run the source from this Admin or refresh Admin.");
     const saved = await window.getSpellingWordSnapshot(code);
-    if (JSON.stringify(Cloud.contestantInfo(saved?.currentContestant)) !== JSON.stringify(contestant)) throw new Error("Refresh Study to enable contestant lives for judges.");
+    if (JSON.stringify(Cloud.contestantInfo(saved?.currentContestant)) !== JSON.stringify(contestant)) throw new Error("Refresh Admin to enable contestant lives for judges.");
   };
   window.markSpellingWordUsed = async (code, token) => {
     if (sessionCode !== code || !token || presenter?.wordToken !== token) throw new Error("The word session changed. Review the current word and try again.");
@@ -1340,7 +1259,7 @@
     if (presenter.usedWords?.[key]?.includes(word)) return;
     if (!await sendRemoteCommand("use-word", token)) throw new Error("Word pool save was not confirmed. Take the scene again to retry.");
     const state = await window.getSpellingWordSnapshot(code);
-    if (!state?.usedWords?.[key]?.includes(word)) throw new Error("Word pool save was not confirmed. Refresh Study if it is hosting this session, then retry.");
+    if (!state?.usedWords?.[key]?.includes(word)) throw new Error("Word pool save was not confirmed. Refresh Admin if it is hosting this session, then retry.");
   };
   async function startAdminSession() {
     if (!source) return;
@@ -1432,10 +1351,6 @@
   });
 
   document.getElementById("new-word-button")?.addEventListener("click", event => sendRemoteCommand("new-word", "", event.currentTarget));
-  document.getElementById("word-visibility-button")?.addEventListener("click", event => {
-    const value = event.currentTarget.dataset.nextVisibility || (presenter?.hiddenMode === false ? "hide" : "reveal");
-    sendRemoteCommand("visibility", value, event.currentTarget);
-  });
   document.querySelectorAll("[data-difficulty]").forEach(button => {
     button.addEventListener("click", () => sendRemoteCommand("difficulty", button.dataset.difficulty, button));
   });

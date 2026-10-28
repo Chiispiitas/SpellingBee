@@ -97,7 +97,6 @@
             this.state = M.choose(this.state, words, level, difficulty);
           } catch (error) { if (this.active && generation === this.generation) this.commit(true); throw error; }
         } else if (type === "contestant") this.state = { ...this.state, currentContestant: Cloud.contestantInfo(JSON.parse(value)) };
-        else if (type === "visibility") this.state = { ...this.state, hiddenMode: value !== "reveal" };
         else if (type === "feedback") this.state = M.feedback(this.state, value);
         else if (type === "use-word") this.state = M.useWord(this.state, value);
         else throw new Error("Unsupported Admin action.");

@@ -1,13 +1,16 @@
 window.BeeProduct = (()=>{
  const nativeFetch=window.fetch.bind(window),params=new URLSearchParams(location.search);
+ const standaloneStudy=location.pathname.endsWith('/arena/index.html');
+ if(standaloneStudy){for(const key of ['session','code','access'])params.delete(key);history.replaceState(null,'',location.pathname+(params.size?'?'+params.toString():''));}
  const guestKey='bee-guest-access:'+location.pathname;
- const token=params.get('access')||sessionStorage.getItem(guestKey)||BeeClient.token();
+ const token=standaloneStudy?BeeClient.token():(params.get('access')||sessionStorage.getItem(guestKey)||BeeClient.token());
  if(params.has('access'))sessionStorage.setItem(guestKey,token);
  const api=async path=>{const r=await nativeFetch(BeeClient.apiBase+path,{credentials:'omit',headers:token?{'X-Requested-With':token}:{}});const data=await r.json();if(!r.ok||data.success===false)throw new Error(data.error||'Please sign in.');return data;};
  const dataCache=new Map();let scope='',settings={};
  async function wordList(level,difficulty){const k=level+'|'+difficulty;if(!dataCache.has(k))dataCache.set(k,api('word-list?level='+encodeURIComponent(level)+'&difficulty='+difficulty).then(d=>d.words).catch(e=>{dataCache.delete(k);throw e;}));return dataCache.get(k);}
  window.fetch=async(input,init={})=>{
    const url=new URL(typeof input==='string'?input:input.url,location.href);
+   if(standaloneStudy&&url.origin===new URL(BeeClient.apiBase).origin&&url.pathname.startsWith('/api/live/'))throw new Error('Study is a standalone practice view.');
    if(url.origin===location.origin){
      const match=url.pathname.match(/\/(wordlists|word-data)\/([^/]+)\/([^/.]+)\.(txt|json)$/);
      if(match){try{const words=await wordList(decodeURIComponent(match[2]),match[3]);const data=match[1]==='wordlists'?words.map(w=>w.word).join('\n'):JSON.stringify(Object.fromEntries(words.map(w=>[w.word,{definition:w.definition,example:w.example,ipa:w.ipa,audio:w.audio}])));return new Response(data,{headers:{'Content-Type':match[4]==='txt'?'text/plain':'application/json'}});}catch(e){return new Response(JSON.stringify({error:e.message}),{status:503});}}
