@@ -34,10 +34,9 @@ window.BeeProduct = (()=>{
    if(!document.getElementById('product-back')&&!location.pathname.endsWith('screen.html')){const a=document.createElement('a');a.id='product-back';a.href=BeeClient.frontendBase+'?v='+BeeClient.release;a.textContent='← Dashboard';document.body.append(a);}
  }
  async function speak(word,level,difficulty){
-   speechSynthesis.cancel();const row=(await wordList(level,difficulty)).find(w=>w.word===word.toLowerCase());
-   if(row?.audio){const sound=new Audio(row.audio);await sound.play();return;}
-   if(!window.speechSynthesis)throw new Error('This browser cannot speak words. Add an audio link to the list.');
-   const speech=new SpeechSynthesisUtterance(word);speech.lang='en-US';speech.rate=.85;const voices=speechSynthesis.getVoices();speech.voice=voices.find(v=>v.lang==='en-US')||voices.find(v=>v.lang.startsWith('en'))||null;speech.volume=1;speechSynthesis.speak(speech);
+   if(!standaloneStudy||!word)return;
+   if(!window.speechSynthesis)throw new Error('Device speech is unavailable in this browser.');
+   speechSynthesis.cancel();const speech=new SpeechSynthesisUtterance(word);speech.lang='en-US';speech.rate=.85;const voices=speechSynthesis.getVoices();speech.voice=voices.find(v=>v.lang==='en-US')||voices.find(v=>v.lang.startsWith('en'))||null;const volume=Number(document.getElementById('volume-slider')?.value??100)/100;speech.volume=Math.max(0,Math.min(1,volume));speechSynthesis.speak(speech);
  }
  async function start(scripts){
    try{

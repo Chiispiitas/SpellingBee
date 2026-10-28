@@ -1,10 +1,20 @@
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let context,settings,words=[],dirtyWords=false,dirtyBrand=false,currentPage='overview',wordLoading=false;
+let categorySavePromise=Promise.resolve();
 let loadedLevel='4TH-5TH',loadedDifficulty='easy';
 let levels=[];let categoryDraft=[];
 const difficulties=['easy','medium','hard','tiebreaker'];
 const api=(path,body)=>window.BeeClient.request(path,body);
+
+const appearanceAutosave=BeeAutosave.create({
+ read:()=>{preview();if(!$('brand-form').checkValidity()||!settings.schoolName.trim()||!settings.eventName.trim())throw new Error('Complete the required school and event fields.');return structuredClone(settings);},
+ write:async payload=>{await categorySavePromise.catch(()=>{});return api('settings',{...payload,categories:settings.categories,categoryNames:settings.categoryNames});},
+ onSaved:(data,{current})=>{if(current){settings=data.settings;dirtyBrand=false;preview();$('sidebar-school').textContent=settings.schoolName;$('overview-school').textContent=settings.schoolName;}},
+ onStatus:(state,error)=>{const el=$('appearance-save-status');el.dataset.state=state;el.textContent=state==='saved'?'Saved':state==='error'?'Not saved. Retrying… '+error.message:'Saving…';}
+});
+function changeAppearance(){dirtyBrand=true;preview();appearanceAutosave.mark();}
+
 function notice(message,error=false){$('notice').textContent=message;$('notice').classList.toggle('error',error);$('notice').hidden=false;}
 async function busy(button,action,label='Saving…'){
  const original=button.textContent;button.disabled=true;button.textContent=label;
@@ -12,6 +22,7 @@ async function busy(button,action,label='Saving…'){
 }
 function run(button,action,label){return busy(button,action,label).catch(()=>{});}
 function openPage(page){
+ if(dirtyBrand)appearanceAutosave.flush().catch(e=>notice(e.message,true));
  currentPage=page;document.querySelectorAll('[data-page]').forEach(el=>el.hidden=el.dataset.page!==page);
  document.querySelectorAll('[data-nav]').forEach(el=>el.classList.toggle('active',el.dataset.nav===page));
  $('breadcrumb').textContent='Workspace / '+({overview:'Overview',branding:'Appearance',words:'Word lists',access:'Account & backups',owner:'Customer accounts'}[page]);
@@ -35,7 +46,7 @@ function preview(){
  $('partner-thumbnails').innerHTML=(settings.partners||[]).map(src=>`<img src="${esc(src)}" class="partner-thumb" alt="Partner logo"/>`).join('');
 }
 function fillBrand(){
- for(const el of $('brand-form').elements)if(el.name&&settings[el.name]!=null)el.value=settings[el.name];preview();
+ for(const el of $('brand-form').elements)if(el.name&&settings[el.name]!=null&&el.value!==String(settings[el.name]))el.value=settings[el.name];preview();
 }
 async function showStudio(){
  context=await api('context');if(!['owner','customer'].includes(context.role))throw new Error('Please sign in with your school account.');
@@ -50,7 +61,7 @@ $('login-form').addEventListener('submit',event=>{
  const form=Object.fromEntries(new FormData(event.target));api('login',form).then(data=>{BeeClient.setToken(data.token);return showStudio();}).catch(e=>$('login-status').textContent=e.message).finally(()=>{button.disabled=false;button.innerHTML='Sign in <span aria-hidden="true"></span>';});
 });
 $('show-password').onclick=()=>{const input=$('login-form').elements.password;input.type=input.type==='password'?'text':'password';$('show-password').textContent=input.type==='password'?'Show':'Hide';};
-$('logout').onclick=()=>{if((dirtyWords||dirtyBrand)&&!confirm('You have unsaved changes. Sign out anyway?'))return;api('logout',{}).then(()=>{BeeClient.clearToken();location.reload();}).catch(e=>notice(e.message,true));};
+$('logout').onclick=async()=>{if(dirtyWords&&!confirm('You have unsaved word-list changes. Sign out anyway?'))return;try{await appearanceAutosave.flush();await api('logout',{});BeeClient.clearToken();location.reload();}catch(e){notice(e.message,true);}};
 document.querySelectorAll('[data-nav],[data-go]').forEach(el=>el.onclick=()=>openPage(el.dataset.nav||el.dataset.go));
 function updateAdminLink(){const code=$('launch-code').value.replace(/\D/g,'').slice(0,16);$('launch-code').value=code;$('open-admin').href='arena/admin.html?session='+code+'&v='+BeeClient.release;if(context)sessionStorage.setItem('bee-studio-code:'+context.account.id,code);}
 $('launch-code').oninput=updateAdminLink;
@@ -59,19 +70,19 @@ $('make-links').onclick=()=>run($('make-links'),async()=>{
 },'Creating links…');
 document.querySelectorAll('[data-copy]').forEach(el=>el.onclick=()=>run(el,async()=>{await navigator.clipboard.writeText($(el.dataset.copy).value);notice('Link copied.');},'Copying…'));
 $('brand-form').addEventListener('submit',e=>e.preventDefault());
-$('brand-form').addEventListener('input',()=>{dirtyBrand=true;preview();});
-$('brand-form').elements.theme.addEventListener('change',()=>{const f=$('brand-form').elements;const p=BeeAppearance.palettes[f.theme.value];f.background.value=p.background;f.accent.value=p.accent;f.windowColor.value=p.windowColor;dirtyBrand=true;preview();});
+$('brand-form').addEventListener('input',event=>{if(event.target.type!=='file')changeAppearance();});
+$('brand-form').elements.theme.addEventListener('change',()=>{const f=$('brand-form').elements;const p=BeeAppearance.palettes[f.theme.value];f.background.value=p.background;f.accent.value=p.accent;f.windowColor.value=p.windowColor;changeAppearance();});
 async function imageData(file){
  if(!file||!['image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('Choose a PNG, JPG or WebP image.');
  if(file.size>5*1024*1024)throw new Error('Choose a logo under 5 MB.');
  const bitmap=await createImageBitmap(file);const scale=Math.min(1,700/bitmap.width,350/bitmap.height);const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close();
  let result=canvas.toDataURL('image/webp',.9);if(result.length>145000)result=canvas.toDataURL('image/webp',.65);if(result.length>145000)throw new Error('This logo is too detailed. Choose a smaller image.');return result;
 }
-for(const [id,field] of [['school-logo','logo'],['secondary-logo','secondaryLogo']])$(id).onchange=async()=>{try{settings[field]=await imageData($(id).files[0]);dirtyBrand=true;preview();}catch(e){notice(e.message,true);}$(id).value='';};
-$('partner-logos').onchange=async()=>{try{const files=[...$('partner-logos').files];if(files.length+(settings.partners||[]).length>4)throw new Error('You can add up to four partner logos.');settings.partners=[...(settings.partners||[]),...await Promise.all(files.map(imageData))];dirtyBrand=true;preview();}catch(e){notice(e.message,true);}$('partner-logos').value='';};
-document.querySelectorAll('[data-clear]').forEach(el=>el.onclick=()=>{settings[el.dataset.clear]='';dirtyBrand=true;preview();});
-$('clear-partners').onclick=()=>{settings.partners=[];dirtyBrand=true;preview();};
-$('save-brand').onclick=()=>run($('save-brand'),async()=>{preview();settings=(await api('settings',settings)).settings;dirtyBrand=false;fillBrand();$('sidebar-school').textContent=settings.schoolName;$('overview-school').textContent=settings.schoolName;notice('Appearance saved. Refresh open competition windows to apply it.');});
+for(const [id,field] of [['school-logo','logo'],['secondary-logo','secondaryLogo']])$(id).onchange=async()=>{try{settings[field]=await imageData($(id).files[0]);changeAppearance();}catch(e){notice(e.message,true);}$(id).value='';};
+$('partner-logos').onchange=async()=>{try{const files=[...$('partner-logos').files];if(files.length+(settings.partners||[]).length>4)throw new Error('You can add up to four partner logos.');settings.partners=[...(settings.partners||[]),...await Promise.all(files.map(imageData))];changeAppearance();}catch(e){notice(e.message,true);}$('partner-logos').value='';};
+document.querySelectorAll('[data-clear]').forEach(el=>el.onclick=()=>{settings[el.dataset.clear]='';changeAppearance();});
+$('clear-partners').onclick=()=>{settings.partners=[];changeAppearance();};
+
 async function loadWords(){
  if(wordLoading)return;wordLoading=true;$('word-count').textContent='Loading…';
  $('save-words').disabled=true;
@@ -80,7 +91,7 @@ async function loadWords(){
 for(const id of ['word-category','word-difficulty'])$(id).onchange=()=>{if(dirtyWords&&!confirm('Discard unsaved changes to this list?')){$('word-category').value=loadedLevel;$('word-difficulty').value=loadedDifficulty;return;}loadWords();};
 function renderWords(){
  const q=$('word-search').value.toLowerCase();$('word-count').textContent=words.length+' words'+(dirtyWords?' · unsaved':'');
- $('word-rows').innerHTML=words.map((w,i)=>({w,i})).filter(({w})=>!q||[w.word,w.definition,w.example].some(v=>String(v||'').toLowerCase().includes(q))).map(({w,i})=>`<tr data-row="${i}"><td><input data-field="word" aria-label="Word ${i+1}" value="${esc(w.word)}" maxlength="80"/></td><td><textarea rows="2" data-field="definition" aria-label="Definition for word ${i+1}" maxlength="600">${esc(w.definition)}</textarea></td><td><textarea rows="2" data-field="example" aria-label="Example for word ${i+1}" maxlength="600">${esc(w.example)}</textarea></td><td><input data-field="ipa" aria-label="Pronunciation for word ${i+1}" value="${esc(w.ipa)}" placeholder="Optional pronunciation" maxlength="120"/><input data-field="audio" aria-label="Audio link for word ${i+1}" value="${esc(w.audio)}" placeholder="Optional HTTPS audio link" type="url"/></td><td><button data-remove="${i}" aria-label="Remove word ${i+1}">×</button></td></tr>`).join('')||'<tr><td colspan="5"><p class="muted">No words here yet. Add a word or paste your list.</p></td></tr>';
+ $('word-rows').innerHTML=words.map((w,i)=>({w,i})).filter(({w})=>!q||[w.word,w.definition,w.example].some(v=>String(v||'').toLowerCase().includes(q))).map(({w,i})=>`<tr data-row="${i}"><td><input data-field="word" aria-label="Word ${i+1}" value="${esc(w.word)}" maxlength="80"/></td><td><textarea rows="2" data-field="definition" aria-label="Definition for word ${i+1}" maxlength="600">${esc(w.definition)}</textarea></td><td><textarea rows="2" data-field="example" aria-label="Example for word ${i+1}" maxlength="600">${esc(w.example)}</textarea></td><td><input data-field="ipa" aria-label="Pronunciation for word ${i+1}" value="${esc(w.ipa)}" placeholder="American IPA, e.g. [əˈkʰɹu]" maxlength="120"/></td><td><button data-remove="${i}" aria-label="Remove word ${i+1}">×</button></td></tr>`).join('')||'<tr><td colspan="5"><p class="muted">No words here yet. Add a word or paste your list.</p></td></tr>';
 }
 $('word-rows').addEventListener('input',e=>{const field=e.target.dataset.field;if(!field)return;words[Number(e.target.closest('[data-row]').dataset.row)][field]=e.target.value;dirtyWords=true;$('word-count').textContent=words.length+' words · unsaved';});
 $('word-rows').addEventListener('click',e=>{const b=e.target.closest('[data-remove]');if(!b)return;words.splice(Number(b.dataset.remove),1);dirtyWords=true;renderWords();});
@@ -111,10 +122,10 @@ const csv=rows=>[['word','definition','example','pronunciation','audio'],...rows
 $('export-csv').onclick=()=>download(`${loadedLevel}-${loadedDifficulty}.csv`,csv(words),'text/csv;charset=utf-8');
 $('csv-template').onclick=()=>download('spelling-bee-template.csv',csv([{word:'apple',definition:'A round fruit.',example:'I eat an apple.',ipa:'',audio:''}]),'text/csv;charset=utf-8');
 $('password-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{await api('password',Object.fromEntries(new FormData(e.target)));dirtyBrand=dirtyWords=false;BeeClient.clearToken();location.reload();});};
-$('backup').onclick=()=>run($('backup'),async()=>{const lists=[];for(const level of settings.categories)for(const difficulty of difficulties){const data=await api(`word-list?level=${encodeURIComponent(level)}&difficulty=${difficulty}`);lists.push({level,difficulty,words:data.words});}const saved=await api('settings');download('spelling-bee-backup.json',JSON.stringify({product:'Spelling Bee App',version:1,exportedAt:new Date().toISOString(),settings:saved.settings,lists},null,2),'application/json');notice('Backup downloaded.');},'Preparing backup…');
+$('backup').onclick=()=>run($('backup'),async()=>{await appearanceAutosave.flush();const lists=[];for(const level of settings.categories)for(const difficulty of difficulties){const data=await api(`word-list?level=${encodeURIComponent(level)}&difficulty=${difficulty}`);lists.push({level,difficulty,words:data.words});}const saved=await api('settings');download('spelling-bee-backup.json',JSON.stringify({product:'Spelling Bee App',version:1,exportedAt:new Date().toISOString(),settings:saved.settings,lists},null,2),'application/json');notice('Backup downloaded.');},'Preparing backup…');
 $('restore').onchange=async()=>{
  try{const file=$('restore').files[0];if(!file)return;if(file.size>6500000)throw new Error('That backup is too large.');const backup=JSON.parse(await file.text());if(backup.product!=='Spelling Bee App'||backup.version!==1||!Array.isArray(backup.lists))throw new Error('Choose a Spelling Bee App backup.');if(!confirm('Replace your saved appearance and word lists with this backup?'))return;
- $('restore').disabled=true;settings=(await api('settings',backup.settings)).settings;fillCategories();for(const list of backup.lists){await api('word-list',list);await new Promise(r=>setTimeout(r,1200));}fillBrand();dirtyBrand=false;dirtyWords=false;words=[];notice('Backup restored. Refresh open competition views.');
+ $('restore').disabled=true;await appearanceAutosave.flush();settings=(await api('settings',backup.settings)).settings;fillCategories();for(const list of backup.lists){await api('word-list',list);await new Promise(r=>setTimeout(r,1200));}fillBrand();dirtyBrand=false;dirtyWords=false;words=[];notice('Backup restored. Refresh open competition views.');
  }catch(e){notice('Restore stopped: '+e.message+'. Lists already confirmed remain saved.',true);}finally{$('restore').value='';$('restore').disabled=false;}
 };
 async function loadAccounts(){try{const {accounts}=await api('accounts');$('account-rows').innerHTML=accounts.filter(a=>a.role!=='owner').map(a=>`<article class="account-row"><strong>${esc(a.schoolName)}</strong><small>${esc(a.username)} · ${a.enabled?'Active':'Disabled'}</small><div class="inline-actions"><button class="text-button" data-reset="${esc(a.username)}" data-school="${esc(a.schoolName)}">Reset password</button><button class="text-button" data-access="${a.enabled?'disable':'enable'}" data-user="${esc(a.username)}">${a.enabled?'Disable':'Enable'} access</button></div></article>`).join('')||'<p class="muted">No customer accounts yet.</p>';}catch(e){notice(e.message,true);}}
@@ -137,28 +148,24 @@ $('add-category').onclick=()=>{if(categoryDraft.length>=4)return;categoryDraft.p
 $('save-categories').onclick=()=>run($('save-categories'),async()=>{
  if(dirtyWords)throw new Error('Save or discard your word-list edits before changing categories.');
  if(categoryDraft.some(c=>!c.name.trim()))throw new Error('Enter a name for every category.');
- const savedAppearance=dirtyBrand;if(savedAppearance)preview();
- const latest=savedAppearance?structuredClone(settings):(await api('settings')).settings;settings=(await api('settings',{...latest,categories:categoryDraft.map(c=>c.id),categoryNames:Object.fromEntries(categoryDraft.map(c=>[c.id,c.name.trim()]))})).settings;
- dirtyBrand=false;fillBrand();$('sidebar-school').textContent=settings.schoolName;$('overview-school').textContent=settings.schoolName;
+ const savedAppearance=dirtyBrand;await appearanceAutosave.flush();
+ categorySavePromise=(async()=>{const latest=(await api('settings')).settings;const saved=(await api('settings',{...latest,categories:categoryDraft.map(c=>c.id),categoryNames:Object.fromEntries(categoryDraft.map(c=>[c.id,c.name.trim()]))})).settings;settings=dirtyBrand?{...saved,...settings,categories:saved.categories,categoryNames:saved.categoryNames}:saved;return saved;})();
+ await categorySavePromise;fillBrand();$('sidebar-school').textContent=settings.schoolName;$('overview-school').textContent=settings.schoolName;
  fillCategories();words=[];await loadWords();notice((savedAppearance?'Categories and appearance saved.':'Categories saved.')+' Refresh open competition views to load your changes.');
 });
-const formattingPrompt=`Convert the word list below into CSV for a spelling bee app.
-Return only CSV, one row per word. Use exactly five columns in this order:
+const formattingPrompt=`Convert my word list into CSV for a spelling bee app.
+Return only CSV, one row per word, with this five-column header:
 word,definition,example,pronunciation,audio
-Include this header row. Only word is required; blank optional cells are allowed.
-Write short definitions and examples using English vocabulary at or below B1. Do not include the target word in its definition. Keep the target word in its example sentence.
-Pronunciation (IPA) and an HTTPS audio URL are optional: leave them blank unless you know they are accurate. Never invent audio URLs.
-Wrap any field containing commas or double quotes in double quotes; escape a quote by doubling it. Keep each field on one line. No Markdown, numbering or commentary.
-Example:
-word,definition,example,pronunciation,audio
-apple,A round fruit.,I eat an apple.,,
-bridge,A road over water.,We crossed the bridge.,,
+Provide an accurate American English IPA pronunciation for EVERY word. Use detailed General American phonetic transcription in square brackets, in this style: abject [ˈæb.dʒɛkt̚], accrue [əˈkʰɹu]. Mark primary/secondary stress and syllable divisions, American rhotic sounds (ɹ, ɚ, ɝ), aspiration, flapping and unreleased stops where appropriate. Use narrow phonetic detail, not British pronunciation or a simplified respelling. Do not insert features where they are not pronounced.
+Write short definitions and examples using English vocabulary at or below B1. Do not include the target word in its definition. Keep the target word in its example sentence. Definitions and examples may be blank if unavailable, but always provide the American IPA.
+Always leave the fifth (audio) column blank. The app uses the device voice, so do not find or invent audio links.
+Quote definition fields. Quote any other field containing a comma or double quote, escaping an internal quote by doubling it. Keep every field on one line. No Markdown, numbering or commentary.
 
 My words:
 [Paste your words here]`;
 $('ai-prompt').value=formattingPrompt;
 function openAIPrompt(){if($('import-dialog').open)$('import-dialog').close();$('ai-status').textContent='';$('ai-dialog').showModal();}
-$('open-ai-prompt').onclick=openAIPrompt;$('import-ai-prompt').onclick=openAIPrompt;
+$('import-ai-prompt').onclick=openAIPrompt;
 $('copy-ai-prompt').onclick=async()=>{try{await navigator.clipboard.writeText(formattingPrompt);$('ai-status').textContent='Prompt copied. Paste it into your AI tool and add your words.';}catch{$('ai-prompt').focus();$('ai-prompt').select();$('ai-status').textContent='Select and copy the prompt above.';}};
 
 showStudio().catch(e=>{if(e.status!==401)$('login-status').textContent=e.message;});
