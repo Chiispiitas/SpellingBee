@@ -26,11 +26,11 @@
   const judgeNameInput = document.getElementById("judge-name");
 
   const deviceId = Cloud.getDeviceId(role === "judge"
-    ? "brighton-spelling-judge-device"
-    : "brighton-spelling-remote-device");
+    ? "bee-device-judge-device"
+    : "bee-device-remote-device");
   const judgeActorId = role === "judge"
     ? deviceId
-    : Cloud.getDeviceId("brighton-spelling-admin-judge-device");
+    : Cloud.getDeviceId("bee-device-admin-judge-device");
   const normalizedJudgeActorId = String(judgeActorId).toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 48);
 
   let sessionCode = "", unsubscribeCloud = () => {};
@@ -84,7 +84,7 @@
   let judgeVerdict = "pending";
   let judgeStartedAt = "";
   let judgeName = role === "judge"
-    ? String(window.BeeProduct.storage.getItem("brighton-spelling-judge-name") || "").trim()
+    ? String(window.BeeProduct.storage.getItem("bee-device-judge-name") || "").trim()
     : "Admin";
 
   function setJoinStatus(message, error = false) {
@@ -367,7 +367,7 @@
       return;
     }
 
-    const level = presenter.level || "4TH-5TH";
+    const level = presenter.level || (window.BeeProduct.settings.categories[0]);
     const difficulty = presenter.difficulty || "easy";
     const currentWord = presenter.word || "";
     const key = `${level}|${difficulty}|${currentWord.toLowerCase()}`;
@@ -425,14 +425,14 @@
             ? " · MISTAKE MARKED"
             : ""
         : "";
-      wordMeta.textContent = `${level} · ${difficulty.toUpperCase()} · ${presenter.poolCount ?? "—"} remaining${judgeSuffix}`;
+      wordMeta.textContent = `${window.BeeProduct.categoryLabel(level)} · ${difficulty.toUpperCase()} · ${presenter.poolCount ?? "—"} remaining${judgeSuffix}`;
     }
 
     if (difficultyPill) difficultyPill.textContent = String(presenter.difficulty || "easy").toUpperCase();
 
     if (role === "remote") {
       const category = document.getElementById("admin-category");
-      if (category) category.value = presenter.level || "4TH-5TH";
+      if (category) category.value = presenter.level || (window.BeeProduct.settings.categories[0]);
       const owns = Boolean(source?.active && source.code === sessionCode);
       const reset = document.getElementById("reset-admin-session");
       if (reset) { reset.disabled = !owns || resetting; reset.title = owns ? "Reset used words, judging and show progress; keep the session code, roster and lives" : "Use Run this session from Admin before resetting"; }
@@ -452,7 +452,7 @@
 
     document.querySelectorAll("[data-difficulty]").forEach(button => {
       button.classList.toggle("selected", button.dataset.difficulty === presenter.difficulty);
-      if (button.dataset.difficulty === "tiebreaker") button.hidden = !["JUNIOR", "SENIOR"].includes(presenter.level);
+      if (button.dataset.difficulty === "tiebreaker") button.hidden = false;
     });
 
     if (canJudge) {
@@ -864,7 +864,7 @@
         judgeNameInput?.focus();
         return;
       }
-      window.BeeProduct.storage.setItem("brighton-spelling-judge-name", judgeName);
+      window.BeeProduct.storage.setItem("bee-device-judge-name", judgeName);
     }
     if (!code) {
       setJoinStatus("Enter the numerical session code.", true);
@@ -1256,7 +1256,7 @@
     if (poolColumns) poolColumns.innerHTML = "<p class='placeholder'>Loading remaining words…</p>";
 
     try {
-      const level = poolState.level || "4TH-5TH";
+      const level = poolState.level || (window.BeeProduct.settings.categories[0]);
       const pools = await Cloud.loadRemainingPools(level, poolState.usedWords || {});
       if (!poolColumns) return;
       const difficulties = Object.keys(pools);
@@ -1271,7 +1271,7 @@
             ${list}
           </section>`;
       }).join("");
-      poolColumns.innerHTML += `<section class="pool-used-section" id="pool-used-words"><h3>Already used words · ${escapeHtml(level)}</h3><div class="pool-columns">${difficulties.map(difficulty => {
+      poolColumns.innerHTML += `<section class="pool-used-section" id="pool-used-words"><h3>Already used words · ${escapeHtml(window.BeeProduct.categoryLabel(level))}</h3><div class="pool-columns">${difficulties.map(difficulty => {
         const values = poolState.usedWords?.[`${level}|${difficulty}`];
         const used = [...new Set(Array.isArray(values) ? values : [])];
         return `<section class="pool-column" data-pool-difficulty="${difficulty}"><h3>${difficulty} <span class="pool-count">${used.length} used</span></h3>${used.length ? `<ol class="pool-word-list">${used.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ol>` : '<p class="placeholder">No used words yet.</p>'}</section>`;

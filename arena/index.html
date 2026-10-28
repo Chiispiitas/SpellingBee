@@ -15,15 +15,15 @@
   <link href="../brand.svg" rel="icon">
 
     <!-- Main -->
-    <link href="style.css?v=20260919-judgeundo-descenders1" rel="stylesheet">
-    <link href="ambient.css?v=04ca84983332" rel="stylesheet">
-    <link href="presenter-cloud.css?v=04ca84983332" rel="stylesheet">
-<link rel="stylesheet" href="product.css?v=04ca84983332"></head>
+    <link href="style.css?v=b6b9a0325dc4" rel="stylesheet">
+
+    <link href="presenter-cloud.css?v=b6b9a0325dc4" rel="stylesheet">
+<link rel="stylesheet" href="product.css?v=b6b9a0325dc4"><link rel="stylesheet" href="../appearance.css?v=b6b9a0325dc4"/></head>
 
 <!-- ==============================================
      *  Body
 ============================================== -->
-<body>
+<body class="study-view">
     <div id="spell-container" aria-hidden="true"></div>
 
     <button class="session-tray-toggle" id="session-tray-toggle" type="button" aria-label="Open cloud session" aria-expanded="false">›</button>
@@ -94,7 +94,7 @@
     <audio id="wrong-audio" preload="auto"></audio>
     <audio id="correct-audio" preload="auto"></audio>
 
-    <div class="lev-logo-container">
+    <div class="school-logo-container">
         <img src="../brand.svg" style="height: calc(100% - 9px);">
         <span id="cheat-word" aria-hidden="true" style="position:absolute;left:0;right:0;bottom:1px;height:7px;line-height:7px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;font-family:Georgia,'Palatino Linotype',serif;font-size:6px;font-weight:600;letter-spacing:.05em;color:rgba(239,225,189,.16);text-shadow:0 1px 2px rgba(0,0,0,.55);user-select:none;pointer-events:none;"></span>
     </div>
@@ -108,5 +108,5 @@
 
 
 
-<script src="../client-config.js?v=04ca84983332"></script><script src="product-boot.js?v=04ca84983332"></script><script>BeeProduct.start([{"src": "js/main.js?v=20261022-history25&release=04ca84983332"}, {"src": "js/cloud.js?v=20261023-judgelives27&release=04ca84983332"}, {"src": "js/presenter-cloud.js?v=20261023-judgelives27&release=04ca84983332"}, {"code": "\n        // Keep feedback sounds independent from the pronunciation volume slider.\n        // Correct and wrong-answer effects always play at 45% volume.\n        const wrongAudio = document.getElementById('wrong-audio');\n        const correctAudio = document.getElementById('correct-audio');\n\n        function lockFeedbackVolume(audio) {\n            audio.volume = 0.45;\n            audio.addEventListener('volumechange', () => {\n                if (Math.abs(audio.volume - 0.45) > 0.001) {\n                    audio.volume = 0.45;\n                }\n            });\n        }\n\n        lockFeedbackVolume(wrongAudio);\n        lockFeedbackVolume(correctAudio);\n\n        // Mirror the current word in a tiny, faint label beneath the Lev logo.\n        const cheatWord = document.getElementById('cheat-word');\n        const secretWordMirrorSource = document.getElementById('secret-word');\n        const syncCheatWord = () => {\n            cheatWord.textContent = secretWordMirrorSource.textContent;\n        };\n        new MutationObserver(syncCheatWord).observe(secretWordMirrorSource, {\n            childList: true,\n            characterData: true,\n            subtree: true\n        });\n        syncCheatWord();\n\n        // Preserve the correct-word sound when a word is completed entirely\n        // through the neutral Next Letter reveal sequence.\n        document.getElementById('next-letter').addEventListener('click', () => {\n            const nextLetter = document.getElementById('next-letter');\n            const word = document.getElementById('word');\n\n            if (nextLetter.disabled && !word.querySelector('.char.err')) {\n                correctAudio.currentTime = 0;\n                correctAudio.play().catch(() => {});\n            }\n        });\n\n        // L reveals the next letter using the same neutral button behavior.\n        window.addEventListener('keydown', (event) => {\n            if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;\n\n            if (event.key === 'l' || event.key === 'L') {\n                event.preventDefault();\n                document.getElementById('next-letter').click();\n            }\n        }, { capture: true });\n    "}]);</script></body>
+<script src="../appearance.js?v=b6b9a0325dc4"></script><script src="../client-config.js?v=b6b9a0325dc4"></script><script src="product-boot.js?v=b6b9a0325dc4"></script><script>BeeProduct.start([{"src": "js/main.js?v=20261022-history25&release=b6b9a0325dc4"}, {"src": "js/cloud.js?v=20261023-judgelives27&release=b6b9a0325dc4"}, {"src": "js/presenter-cloud.js?v=20261023-judgelives27&release=b6b9a0325dc4"}, {"code": "\n        // Keep feedback sounds independent from the pronunciation volume slider.\n        // Correct and wrong-answer effects always play at 45% volume.\n        const wrongAudio = document.getElementById('wrong-audio');\n        const correctAudio = document.getElementById('correct-audio');\n\n        function lockFeedbackVolume(audio) {\n            audio.volume = 0.45;\n            audio.addEventListener('volumechange', () => {\n                if (Math.abs(audio.volume - 0.45) > 0.001) {\n                    audio.volume = 0.45;\n                }\n            });\n        }\n\n        lockFeedbackVolume(wrongAudio);\n        lockFeedbackVolume(correctAudio);\n\n        // Mirror the current word in a tiny, faint label beneath the school logo.\n        const cheatWord = document.getElementById('cheat-word');\n        const secretWordMirrorSource = document.getElementById('secret-word');\n        const syncCheatWord = () => {\n            cheatWord.textContent = secretWordMirrorSource.textContent;\n        };\n        new MutationObserver(syncCheatWord).observe(secretWordMirrorSource, {\n            childList: true,\n            characterData: true,\n            subtree: true\n        });\n        syncCheatWord();\n\n        // Preserve the correct-word sound when a word is completed entirely\n        // through the neutral Next Letter reveal sequence.\n        document.getElementById('next-letter').addEventListener('click', () => {\n            const nextLetter = document.getElementById('next-letter');\n            const word = document.getElementById('word');\n\n            if (nextLetter.disabled && !word.querySelector('.char.err')) {\n                correctAudio.currentTime = 0;\n                correctAudio.play().catch(() => {});\n            }\n        });\n\n        // L reveals the next letter using the same neutral button behavior.\n        window.addEventListener('keydown', (event) => {\n            if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;\n\n            if (event.key === 'l' || event.key === 'L') {\n                event.preventDefault();\n                document.getElementById('next-letter').click();\n            }\n        }, { capture: true });\n    "}]);</script></body>
 </html>

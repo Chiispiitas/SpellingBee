@@ -5,10 +5,10 @@
 ============================================== */
 let hiddenMode = true; // default: hidden word mode
 let currentDifficulty = 'easy';
-let currentLevel = '4TH-5TH';
+let currentLevel = window.BeeProduct.settings.categories[0];
 let wordSequence = 0;
 const usedWordsByPool = new Map();
-let WORDLIST_PATH = `wordlists/4TH-5TH/${currentDifficulty}.txt`;
+let WORDLIST_PATH = `wordlists/${currentLevel}/${currentDifficulty}.txt`;
 
 function currentPoolKey(level = currentLevel, difficulty = currentDifficulty) {
     return `${level}|${difficulty}`;
@@ -499,9 +499,8 @@ async function changeDifficulty(level) {
     const generation = ++poolLoadGeneration;
     hiddenMode = true; renderWord();
     const selectedPool = elPoolSelect ? elPoolSelect.value : currentLevel;
-    if (level === 'tiebreaker' && !['JUNIOR', 'SENIOR'].includes(selectedPool)) level = 'easy';
     currentDifficulty = level;
-    btnTiebreaker.hidden = !['JUNIOR', 'SENIOR'].includes(selectedPool);
+    btnTiebreaker.hidden = false;
     currentLevel = selectedPool;
     WORDLIST_PATH = `wordlists/${selectedPool}/${level}.txt`;
 

@@ -2,7 +2,8 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let context,settings,words=[],dirtyWords=false,dirtyBrand=false,currentPage='overview',wordLoading=false;
 let loadedLevel='4TH-5TH',loadedDifficulty='easy';
-const levels=['4TH-5TH','6TH-7TH','JUNIOR','SENIOR'],difficulties=['easy','medium','hard','tiebreaker'];
+let levels=[];let categoryDraft=[];
+const difficulties=['easy','medium','hard','tiebreaker'];
 const api=(path,body)=>window.BeeClient.request(path,body);
 function notice(message,error=false){$('notice').textContent=message;$('notice').classList.toggle('error',error);$('notice').hidden=false;}
 async function busy(button,action,label='Saving…'){
@@ -19,14 +20,18 @@ function openPage(page){
 }
 function preview(){
  const form=new FormData($('brand-form'));for(const [key,value] of form)settings[key]=value;
- const palettes={midnight:'#101b2c',slate:'#26384b',ivory:'#f3eee4',forest:'#123a31',plum:'#34233f'};
- const light=settings.theme==='ivory';const font={modern:'Manrope, sans-serif',classic:'Georgia, serif',rounded:'ui-rounded, system-ui'}[settings.font];
+ const colors=BeeAppearance.apply(settings);
+ const palettes=BeeAppearance.palettes;
+ const light=colors.base==='#17212b';const font={modern:'Manrope, sans-serif',classic:'Georgia, serif',rounded:'ui-rounded, system-ui'}[settings.font];
  for(const id of ['overview-preview','brand-preview']){
-  const box=$(id);box.style.background=`radial-gradient(ellipse at 50% 0%, ${settings.accent}25, transparent 65%),${settings.background||palettes[settings.theme]}`;
-  box.style.color=light?'#223243':'#f4f7fb';box.style.fontFamily=font;
+  const box=$(id);box.style.background=settings.background;
+  box.style.color=colors.base;box.style.fontFamily=font;
  }
- $('preview-logo').src=settings.logo||'brand.svg';$('preview-school').textContent=settings.schoolName;$('preview-event').textContent=settings.eventName;$('preview-tagline').textContent=settings.tagline;
- document.querySelector('[data-school-logo]').src=settings.logo||'brand.svg';document.querySelector('[data-school-name]').textContent=settings.schoolName;document.querySelector('[data-event-name]').textContent=settings.eventName;document.querySelector('[data-tagline]').textContent=settings.tagline;
+ $('preview-logo').src=settings.logo||'';$('preview-school').textContent=settings.schoolName;$('preview-event').textContent=settings.eventName;$('preview-tagline').textContent=settings.tagline;
+ document.querySelector('[data-school-logo]').src=settings.logo||'';document.querySelector('[data-school-name]').textContent=settings.schoolName;document.querySelector('[data-event-name]').textContent=settings.eventName;document.querySelector('[data-tagline]').textContent=settings.tagline;
+ $('preview-logo').hidden=!settings.logo;document.querySelector('[data-school-logo]').hidden=!settings.logo;
+ const identity=document.querySelector('.school-identity');identity.querySelector('span').textContent=settings.schoolName;const logo=identity.querySelector('img');logo.hidden=!settings.logo;if(settings.logo)logo.src=settings.logo;else logo.removeAttribute('src');
+ document.title=settings.schoolName+' · Spelling Bee';document.querySelector('.workspace-footer').firstChild.textContent=settings.schoolName+' ';const icon=document.querySelector('link[rel=icon]');if(settings.logo)icon.href=settings.logo;else icon.removeAttribute('href');
  $('partner-thumbnails').innerHTML=(settings.partners||[]).map(src=>`<img src="${esc(src)}" class="partner-thumb" alt="Partner logo"/>`).join('');
 }
 function fillBrand(){
@@ -36,7 +41,7 @@ async function showStudio(){
  context=await api('context');if(!['owner','customer'].includes(context.role))throw new Error('Please sign in with your school account.');
  settings=context.settings;$('login-view').hidden=true;$('studio-view').hidden=false;
  $('sidebar-school').textContent=settings.schoolName;$('sidebar-user').textContent=context.account.username;$('overview-school').textContent=settings.schoolName;
- $('owner-nav').hidden=context.role!=='owner';fillBrand();
+ $('owner-nav').hidden=context.role!=='owner';fillBrand();fillCategories();
  const saved=sessionStorage.getItem('bee-studio-code:'+context.account.id);if(saved)$('launch-code').value=saved;updateAdminLink();
 }
 $('login-form').addEventListener('submit',event=>{
@@ -55,7 +60,7 @@ $('make-links').onclick=()=>run($('make-links'),async()=>{
 document.querySelectorAll('[data-copy]').forEach(el=>el.onclick=()=>run(el,async()=>{await navigator.clipboard.writeText($(el.dataset.copy).value);notice('Link copied.');},'Copying…'));
 $('brand-form').addEventListener('submit',e=>e.preventDefault());
 $('brand-form').addEventListener('input',()=>{dirtyBrand=true;preview();});
-$('brand-form').elements.theme.addEventListener('change',()=>{const f=$('brand-form').elements;f.background.value={midnight:'#101b2c',slate:'#26384b',ivory:'#f3eee4',forest:'#123a31',plum:'#34233f'}[f.theme.value];preview();});
+$('brand-form').elements.theme.addEventListener('change',()=>{const f=$('brand-form').elements;const p=BeeAppearance.palettes[f.theme.value];f.background.value=p.background;f.accent.value=p.accent;f.windowColor.value=p.windowColor;dirtyBrand=true;preview();});
 async function imageData(file){
  if(!file||!['image/png','image/jpeg','image/webp'].includes(file.type))throw new Error('Choose a PNG, JPG or WebP image.');
  if(file.size>5*1024*1024)throw new Error('Choose a logo under 5 MB.');
@@ -84,11 +89,12 @@ function addWord(){words.push({word:'',definition:'',example:'',ipa:'',audio:''}
 $('add-word').onclick=addWord;$('add-word-bottom').onclick=addWord;
 $('save-words').onclick=()=>run($('save-words'),async()=>{const data=await api('word-list',{level:loadedLevel,difficulty:loadedDifficulty,words});words=data.words;dirtyWords=false;renderWords();notice(`${data.count} words saved. Refresh an open Admin or Study view before using the updated list.`);});
 function parseDelimited(text){
- text=text.replace(/^\uFEFF/,'');const first=text.split(/\r?\n/)[0]||'';const delimiter=first.includes('\t')?'\t':',';
+ text=text.trim().replace(/^```(?:csv|text)?\s*\n/i,'').replace(/\n```$/,'').replace(/^\uFEFF/,'');const first=text.split(/\r?\n/)[0]||'';const delimiter=first.includes('\t')?'\t':',';
  const rows=[];let row=[],value='',quoted=false;
  for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){value+='"';i++;}else if(quoted||value==='')quoted=!quoted;else value+=c;}else if(c===delimiter&&!quoted){row.push(value);value='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(value);if(row.some(s=>s.trim()))rows.push(row);row=[];value='';}else value+=c;}
  if(quoted)throw new Error('An opening quote is missing its closing quote.');row.push(value);if(row.some(s=>s.trim()))rows.push(row);
  if(rows[0]&&/^(word|palabra)$/i.test(rows[0][0].trim()))rows.shift();
+ if(rows.some(r=>r.length>5))throw new Error('A row has more than five fields. Put text containing commas inside double quotes.');
  return rows.map(r=>({word:r[0]?.trim()||'',definition:r[1]?.trim()||'',example:r[2]?.trim()||'',ipa:r[3]?.trim()||'',audio:r[4]?.trim()||''}));
 }
 function importWords(text,replace){
@@ -105,14 +111,53 @@ const csv=rows=>[['word','definition','example','pronunciation','audio'],...rows
 $('export-csv').onclick=()=>download(`${loadedLevel}-${loadedDifficulty}.csv`,csv(words),'text/csv;charset=utf-8');
 $('csv-template').onclick=()=>download('spelling-bee-template.csv',csv([{word:'apple',definition:'A round fruit.',example:'I eat an apple.',ipa:'',audio:''}]),'text/csv;charset=utf-8');
 $('password-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{await api('password',Object.fromEntries(new FormData(e.target)));dirtyBrand=dirtyWords=false;BeeClient.clearToken();location.reload();});};
-$('backup').onclick=()=>run($('backup'),async()=>{const lists=[];for(const level of levels)for(const difficulty of difficulties){const data=await api(`word-list?level=${encodeURIComponent(level)}&difficulty=${difficulty}`);lists.push({level,difficulty,words:data.words});}const saved=await api('settings');download('spelling-bee-backup.json',JSON.stringify({product:'Spelling Bee App',version:1,exportedAt:new Date().toISOString(),settings:saved.settings,lists},null,2),'application/json');notice('Backup downloaded.');},'Preparing backup…');
+$('backup').onclick=()=>run($('backup'),async()=>{const lists=[];for(const level of settings.categories)for(const difficulty of difficulties){const data=await api(`word-list?level=${encodeURIComponent(level)}&difficulty=${difficulty}`);lists.push({level,difficulty,words:data.words});}const saved=await api('settings');download('spelling-bee-backup.json',JSON.stringify({product:'Spelling Bee App',version:1,exportedAt:new Date().toISOString(),settings:saved.settings,lists},null,2),'application/json');notice('Backup downloaded.');},'Preparing backup…');
 $('restore').onchange=async()=>{
  try{const file=$('restore').files[0];if(!file)return;if(file.size>6500000)throw new Error('That backup is too large.');const backup=JSON.parse(await file.text());if(backup.product!=='Spelling Bee App'||backup.version!==1||!Array.isArray(backup.lists))throw new Error('Choose a Spelling Bee App backup.');if(!confirm('Replace your saved appearance and word lists with this backup?'))return;
- $('restore').disabled=true;for(const list of backup.lists){await api('word-list',list);await new Promise(r=>setTimeout(r,1200));}settings=(await api('settings',backup.settings)).settings;fillBrand();dirtyBrand=false;dirtyWords=false;words=[];notice('Backup restored. Refresh open competition views.');
+ $('restore').disabled=true;settings=(await api('settings',backup.settings)).settings;fillCategories();for(const list of backup.lists){await api('word-list',list);await new Promise(r=>setTimeout(r,1200));}fillBrand();dirtyBrand=false;dirtyWords=false;words=[];notice('Backup restored. Refresh open competition views.');
  }catch(e){notice('Restore stopped: '+e.message+'. Lists already confirmed remain saved.',true);}finally{$('restore').value='';$('restore').disabled=false;}
 };
 async function loadAccounts(){try{const {accounts}=await api('accounts');$('account-rows').innerHTML=accounts.filter(a=>a.role!=='owner').map(a=>`<article class="account-row"><strong>${esc(a.schoolName)}</strong><small>${esc(a.username)} · ${a.enabled?'Active':'Disabled'}</small><div class="inline-actions"><button class="text-button" data-reset="${esc(a.username)}" data-school="${esc(a.schoolName)}">Reset password</button><button class="text-button" data-access="${a.enabled?'disable':'enable'}" data-user="${esc(a.username)}">${a.enabled?'Disable':'Enable'} access</button></div></article>`).join('')||'<p class="muted">No customer accounts yet.</p>';}catch(e){notice(e.message,true);}}
 $('account-form').onsubmit=e=>{e.preventDefault();run(e.submitter,async()=>{const form=Object.fromEntries(new FormData(e.target));await api('accounts',form);notice(`Account created for ${form.schoolName}. Share their username and password privately.`);e.target.reset();await loadAccounts();},'Creating workspace…');};
 $('account-rows').onclick=e=>{const reset=e.target.closest('[data-reset]'),access=e.target.closest('[data-access]');if(reset){const password=prompt('Choose a new password for '+reset.dataset.reset+' (at least 6 characters):');if(!password)return;run(reset,async()=>{await api('accounts',{action:'reset',username:reset.dataset.reset,schoolName:reset.dataset.school,password});notice('Password reset. Previously shared links have been invalidated.');});}if(access){if(!confirm(`${access.dataset.access==='disable'?'Disable':'Enable'} access for ${access.dataset.user}?`))return;run(access,async()=>{await api('accounts',{action:access.dataset.access,username:access.dataset.user});await loadAccounts();notice('Account access updated.');});}};
 window.addEventListener('beforeunload',e=>{if(dirtyWords||dirtyBrand){e.preventDefault();e.returnValue='';}});
+
+
+function fillCategories(){
+ levels=[...settings.categories];categoryDraft=levels.map(id=>({id,name:settings.categoryNames?.[id]||id}));
+ const selected=$('word-category').value;$('word-category').replaceChildren(...categoryDraft.map(c=>new Option(c.name,c.id)));if(levels.includes(selected))$('word-category').value=selected;
+ renderCategories();
+}
+function renderCategories(){
+ $('category-rows').innerHTML=categoryDraft.map((c,i)=>`<div class="category-row"><input data-category="${i}" aria-label="Category ${i+1} name" maxlength="40" value="${esc(c.name)}"/><button data-category-remove="${i}" class="secondary" ${categoryDraft.length===1?'disabled':''}>Remove</button></div>`).join('');$('add-category').disabled=categoryDraft.length>=4;
+}
+$('category-rows').oninput=e=>{if(e.target.dataset.category!==undefined)categoryDraft[Number(e.target.dataset.category)].name=e.target.value;};
+$('category-rows').onclick=e=>{const b=e.target.closest('[data-category-remove]');if(!b)return;categoryDraft.splice(Number(b.dataset.categoryRemove),1);renderCategories();};
+$('add-category').onclick=()=>{if(categoryDraft.length>=4)return;categoryDraft.push({id:'cat-'+crypto.randomUUID().slice(0,12),name:''});renderCategories();$('category-rows').lastElementChild.querySelector('input').focus();};
+$('save-categories').onclick=()=>run($('save-categories'),async()=>{
+ if(dirtyBrand)throw new Error('Save your appearance changes before editing categories.');
+ if(dirtyWords)throw new Error('Save or discard your word-list edits before changing categories.');
+ if(categoryDraft.some(c=>!c.name.trim()))throw new Error('Enter a name for every category.');
+ const latest=(await api('settings')).settings;settings=(await api('settings',{...latest,categories:categoryDraft.map(c=>c.id),categoryNames:Object.fromEntries(categoryDraft.map(c=>[c.id,c.name.trim()]))})).settings;
+ fillCategories();words=[];await loadWords();notice('Categories saved. Refresh open competition views to load these names.');
+});
+const formattingPrompt=`Convert the word list below into CSV for a spelling bee app.
+Return only CSV, one row per word. Use exactly five columns in this order:
+word,definition,example,pronunciation,audio
+Include this header row. Only word is required; blank optional cells are allowed.
+Write short definitions and examples using English vocabulary at or below B1. Do not include the target word in its definition. Keep the target word in its example sentence.
+Pronunciation (IPA) and an HTTPS audio URL are optional: leave them blank unless you know they are accurate. Never invent audio URLs.
+Wrap any field containing commas or double quotes in double quotes; escape a quote by doubling it. Keep each field on one line. No Markdown, numbering or commentary.
+Example:
+word,definition,example,pronunciation,audio
+apple,A round fruit.,I eat an apple.,,
+bridge,A road over water.,We crossed the bridge.,,
+
+My words:
+[Paste your words here]`;
+$('ai-prompt').value=formattingPrompt;
+function openAIPrompt(){if($('import-dialog').open)$('import-dialog').close();$('ai-status').textContent='';$('ai-dialog').showModal();}
+$('open-ai-prompt').onclick=openAIPrompt;$('import-ai-prompt').onclick=openAIPrompt;
+$('copy-ai-prompt').onclick=async()=>{try{await navigator.clipboard.writeText(formattingPrompt);$('ai-status').textContent='Prompt copied. Paste it into your AI tool and add your words.';}catch{$('ai-prompt').focus();$('ai-prompt').select();$('ai-status').textContent='Select and copy the prompt above.';}};
+
 showStudio().catch(e=>{if(e.status!==401)$('login-status').textContent=e.message;});

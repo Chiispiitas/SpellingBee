@@ -20,30 +20,9 @@ body { margin: 0; min-height: 100vh; display: grid; place-items: center; overflo
   overflow: hidden;
   container-type: inline-size;
   isolation: isolate;
-  background:
-    radial-gradient(circle at 50% 32%, rgba(200,169,107,.09), transparent 24%),
-    radial-gradient(circle at 14% 18%, rgba(62,81,118,.10), transparent 28%),
-    radial-gradient(circle at 88% 20%, rgba(92,41,54,.10), transparent 25%),
-    linear-gradient(145deg, #0a0c13, #15111a 48%, #0b0f17);
+  background:var(--ui-bg);
 }
-.arena { position: absolute; inset: -3%; z-index: -1; pointer-events: none; opacity: .45;
-  background:
-    radial-gradient(circle at 7% 14%, #f0dca54d 0 .7px, transparent 1.5px),
-    radial-gradient(circle at 19% 8%, #bccde640 0 .9px, transparent 1.8px),
-    radial-gradient(circle at 31% 24%, #eed69f4d 0 .6px, transparent 1.5px),
-    radial-gradient(circle at 61% 19%, #f5dfa84d 0 1px, transparent 2px),
-    radial-gradient(circle at 83% 9%, #becfe640 0 .7px, transparent 1.6px),
-    radial-gradient(circle at 11% 39%, #c9d7e840 0 .7px, transparent 1.6px),
-    radial-gradient(circle at 26% 51%, #f1daa34d 0 1px, transparent 2px),
-    radial-gradient(circle at 54% 56%, #f2dcaa40 0 .9px, transparent 1.9px),
-    radial-gradient(circle at 78% 63%, #efd6a04d 0 .7px, transparent 1.6px),
-    radial-gradient(circle at 91% 48%, #cfdbed40 0 .9px, transparent 1.8px),
-    radial-gradient(circle at 22% 84%, #c5d5e740 0 .6px, transparent 1.4px),
-    radial-gradient(circle at 37% 70%, #f4deab4d 0 1px, transparent 2px),
-    radial-gradient(circle at 72% 76%, #efd69e40 0 .6px, transparent 1.5px),
-    radial-gradient(circle at 88% 91%, #ecd9ab40 0 1px, transparent 2px);
-  animation: ambient-drift 48s ease-in-out infinite alternate;
-}
+
 .broadcast-header { height: 14%; margin: 0 5.5%; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #c8a96b1f; }
 .school-brand { display: flex; align-items: center; gap: 1.1cqw; color: var(--muted); font-size: .75cqw; line-height: 1.7; }
 .school-brand img { width: 5.3cqw; height: 4.5cqw; object-fit: contain; opacity: .85; }
@@ -111,7 +90,7 @@ body { margin: 0; min-height: 100vh; display: grid; place-items: center; overflo
 .speller-layout .life-icon { font-size: 1.9cqw; }
 .logo-sweep { position: absolute; inset: 0; z-index: 6; pointer-events: none; visibility: hidden; overflow: hidden; }
 .logo-sweep.active { visibility: visible; }
-.sweep-panel { position: absolute; inset: -8px -20%; display: grid; place-items: center; transform: translateX(-112%); background: radial-gradient(ellipse at center, #25202a, #0d0f18 72%); backdrop-filter: blur(12px); mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
+.sweep-panel { position: absolute; inset: -8px -20%; display: grid; place-items: center; transform: translateX(-112%); background: radial-gradient(ellipse at center, #25202a, #0d0f18 72%);  mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent); }
 .sweep-panel img { width: 16cqw; height: 16cqw; object-fit: contain; opacity: .85; filter: drop-shadow(0 0 2.5cqw #c8a96b12); }
 .empty-state { color: var(--muted); font-size: 1.6cqw; padding-block: 4cqw; }
 .finalists-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1.2cqw; }
@@ -155,7 +134,6 @@ body { margin: 0; min-height: 100vh; display: grid; place-items: center; overflo
 .broadcast[data-layout=stream] .camera-feed:not(.hidden),.broadcast[data-layout=stream] .camera-still:not(.hidden){display:block}
 .broadcast[data-layout=stream] .camera-shade{display:block}
 .broadcast[data-layout=stream] .camera-feed.camera-warm{display:block;opacity:0;pointer-events:none}
-.broadcast[data-layout=stream] .arena{display:none}
 .broadcast[data-layout=stream] .broadcast-header{height:8%;margin:2.5% 4% 0;border:0;align-items:start}
 .broadcast[data-layout=stream] .school-brand,.broadcast[data-layout=stream] .broadcast-event{background:#0b101cdb;border:1px solid #ffffff16;padding:.5cqw .7cqw;border-radius:.3cqw;min-height:4cqw;box-shadow:0 .3cqw 1.5cqw #0003}
 .broadcast[data-layout=stream] .school-brand{gap:.7cqw}

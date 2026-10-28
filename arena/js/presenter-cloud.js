@@ -34,7 +34,7 @@
     const changedWord = current !== state.word || Number(wordSequence) !== Number(state.wordSequence);
     followedState = state; sessionStartedAt = state.startedAt || sessionStartedAt;
     currentContestant = Cloud.contestantInfo(state.currentContestant);
-    current = state.word || null; currentLevel = state.level || "4TH-5TH"; currentDifficulty = state.difficulty || "easy";
+    current = state.word || null; currentLevel = state.level || (window.BeeProduct.settings.categories[0]); currentDifficulty = state.difficulty || "easy";
     wordSequence = Number(state.wordSequence || 0); marks = Array.isArray(state.marks) ? state.marks.slice() : [];
     ptr = Number(state.pointer || 0); hiddenMode = state.hiddenMode !== false;
     judgementRevision = Number(state.judgementRevision || 0); judgementSource = state.judgementSource || "admin";
@@ -43,7 +43,7 @@
     WORDLIST_PATH = `wordlists/${currentLevel}/${currentDifficulty}.txt`;
     usedWordsByPool.clear(); Object.entries(state.usedWords || {}).forEach(([key, words]) => usedWordsByPool.set(key, new Set(words)));
     [btnEasy, btnMedium, btnHard, btnTiebreaker].forEach((button, index) => button?.classList.toggle("primary", ["easy", "medium", "hard", "tiebreaker"][index] === currentDifficulty));
-    btnTiebreaker.hidden = !["JUNIOR", "SENIOR"].includes(currentLevel);
+    btnTiebreaker.hidden = false;
     if (elSecretWord) { elSecretWord.textContent = current || ""; if (changedWord) elSecretWord.classList.remove("visible"); }
     if (changedWord && current && elAudio) elAudio.src = `${AUDIO_DIR}/${wordToAudioBasename(current)}${AUDIO_EXT}`;
     renderWord();
@@ -135,7 +135,7 @@
   function presenterSnapshot() {
     const level = typeof currentLevel !== "undefined"
       ? currentLevel
-      : (document.getElementById("pool-select")?.value || "4TH-5TH");
+      : (document.getElementById("pool-select")?.value || (window.BeeProduct.settings.categories[0]));
     const difficulty = typeof currentDifficulty !== "undefined" ? currentDifficulty : "easy";
     const word = typeof current !== "undefined" && current ? current : "";
     const sequence = typeof wordSequence !== "undefined" ? Number(wordSequence) || 0 : 0;
@@ -483,7 +483,7 @@
     sessionCode = normalized;
     unsubscribeCloud = Cloud.subscribe(normalized, receiveCloudChange);
     sessionStartedAt = new Date().toISOString();
-    window.BeeProduct.storage.setItem("brighton-spelling-presenter-session", normalized);
+    window.BeeProduct.storage.setItem("bee-device-presenter-session", normalized);
     if (codeInput) codeInput.value = normalized;
     updateViewLinks();
     setStatus(`Connecting session ${normalized}…`);
@@ -518,7 +518,7 @@
     pendingPresenterSnapshot = null;
     pendingPresenterFingerprint = "";
     pendingPresenterUrgent = false; lastQueuedWordToken = "";
-    window.BeeProduct.storage.removeItem("brighton-spelling-presenter-session");
+    window.BeeProduct.storage.removeItem("bee-device-presenter-session");
     updateViewLinks();
     setStatus("Local Study mode.");
     if (wasFollowing) changeDifficulty(currentDifficulty);
@@ -559,7 +559,7 @@
   }, 10000);
 
   updateViewLinks();
-  const saved = Cloud.normalizeSessionCode(new URLSearchParams(location.search).get("session") || window.BeeProduct.storage.getItem("brighton-spelling-presenter-session"));
+  const saved = Cloud.normalizeSessionCode(new URLSearchParams(location.search).get("session") || window.BeeProduct.storage.getItem("bee-device-presenter-session"));
   if (saved && codeInput) {
     codeInput.value = saved;
     window.setTimeout(() => connect(saved), 150);

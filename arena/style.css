@@ -23,26 +23,10 @@ body {
   flex-direction: column;
   overflow-x: hidden;
   font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background:
-    radial-gradient(circle at 50% 32%, rgba(200,169,107,.09), transparent 24%),
-    radial-gradient(circle at 14% 18%, rgba(62,81,118,.10), transparent 28%),
-    radial-gradient(circle at 88% 20%, rgba(92,41,54,.10), transparent 25%),
-    linear-gradient(145deg, #0a0c13, #15111a 48%, #0b0f17);
+  background:var(--ui-bg);
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  opacity: .55;
-  background-image:
-    radial-gradient(circle, rgba(235,215,166,.5) 0 1px, transparent 1.5px),
-    radial-gradient(circle, rgba(175,194,220,.3) 0 1px, transparent 1.5px);
-  background-size: 173px 173px, 257px 257px;
-  background-position: 27px 15px, 93px 61px;
-}
+
 
 /*--------------------------------------------------------------
 # Topbar
@@ -62,24 +46,9 @@ body::before {
 
 .topbar img { display: none; }
 
-.topbar::before {
-  content: "";
-  width: min(520px, 68vw);
-  height: 58px;
-  background: url("assets/hp-logo.png") center / contain no-repeat;
-  filter: drop-shadow(0 4px 14px rgba(0,0,0,.45));
-}
 
-.topbar::after {
-  content: "◈──────────────◈";
-  position: absolute;
-  bottom: -3px;
-  color: rgba(200,169,107,.28);
-  font-family: Georgia, serif;
-  font-size: .7rem;
-  letter-spacing: .18em;
-  text-shadow: 0 -1px 0 rgba(0,0,0,.45);
-}
+
+
 
 /*--------------------------------------------------------------
 # Word Area
@@ -172,7 +141,7 @@ body::before {
   position: sticky;
   bottom: 0;
   z-index: 20;
-  backdrop-filter: blur(12px);
+
   box-shadow: 0 -12px 40px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,242,207,.04);
 }
 
@@ -301,7 +270,7 @@ body::before {
 /*--------------------------------------------------------------
 # Logo
 --------------------------------------------------------------*/
-.lev-logo-container,
+.school-logo-container,
 .english-logo-container {
   position: absolute;
   bottom: .2rem;
@@ -314,10 +283,10 @@ body::before {
   filter: drop-shadow(0 5px 12px rgba(0,0,0,.32));
 }
 
-.lev-logo-container { left: .35rem; }
+.school-logo-container { left: .35rem; }
 .english-logo-container { right: .35rem; }
 
-.lev-logo-container img,
+.school-logo-container img,
 .english-logo-container img {
   width: 100%;
   height: 100%;

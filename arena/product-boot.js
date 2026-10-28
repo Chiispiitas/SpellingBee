@@ -16,17 +16,18 @@ window.BeeProduct = (()=>{
    return nativeFetch(input,init);
  };
  const storage={getItem:k=>localStorage.getItem(scope+k),setItem:(k,v)=>localStorage.setItem(scope+k,v),removeItem:k=>localStorage.removeItem(scope+k)};
- class Channel extends BroadcastChannel{constructor(name){super(scope+name);}}
+ const Channel=typeof BroadcastChannel==='function'?class extends BroadcastChannel{constructor(name){super(scope+name);}}:class{postMessage(){}addEventListener(){}removeEventListener(){}close(){}};
  const escape=value=>String(value||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- function standby(){return `<div class="centered-layout standby-layout"><div class="standby-rotation"><div class="standby-set standby-school" data-standby="school"><img class="standby-logo" src="${escape(settings.logo||(BeeClient.frontendBase+'brand.svg'))}" alt="School logo"><h1 class="headline">${escape(settings.schoolName)}</h1>${settings.tagline?`<p>${escape(settings.tagline)}</p>`:''}</div><div class="standby-set standby-partners" data-standby="partners">${(settings.partners||[]).map(src=>`<img class="standby-partner-logo" src="${escape(src)}" alt="Partner logo">`).join('')}</div></div></div>`;}
+ function standby(){return `<div class="centered-layout standby-layout"><div class="standby-rotation"><div class="standby-set standby-school" data-standby="school"><img class="standby-logo" ${settings.logo?'':'hidden'} src="${escape(settings.logo||'')}" alt="School logo"><h1 class="headline">${escape(settings.schoolName)}</h1>${settings.tagline?`<p>${escape(settings.tagline)}</p>`:''}</div><div class="standby-set standby-partners" data-standby="partners">${(settings.partners||[]).map(src=>`<img class="standby-partner-logo" src="${escape(src)}" alt="Partner logo">`).join('')}</div></div></div>`;}
  function brand(){
-   const r=document.documentElement,light=settings.theme==='ivory';
-   for(const [k,v] of Object.entries({'--bg':settings.background,'--product-bg':settings.background,'--accent':settings.accent,'--gold':settings.accent,'--fg':light?'#213043':'#f4f7fb','--muted':light?'#53667a':'#abb9cb','--panel':light?'#ffffff':'#162538','--control-card':light?'#ffffff':'#162538','--product-font':{modern:'system-ui, sans-serif',classic:'Georgia, serif',rounded:'ui-rounded, system-ui, sans-serif'}[settings.font]}))r.style.setProperty(k,v);
+   const r=document.documentElement;BeeAppearance.apply(settings);
+   r.style.setProperty('--product-font',{modern:'system-ui, sans-serif',classic:'Georgia, serif',rounded:'system-ui, sans-serif'}[settings.font]);
+   const icon=document.querySelector('link[rel=icon]');if(icon){if(settings.logo)icon.href=settings.logo;else icon.removeAttribute('href');}
    if(settings.motion==='reduced')r.dataset.motion='reduced';
-   document.querySelectorAll('img').forEach(img=>{if(img.closest('.english-brand')||img.classList.contains('english-brand')){img.src=settings.secondaryLogo||(BeeClient.frontendBase+'brand.svg');img.hidden=!settings.secondaryLogo;}else if(!img.closest('.standby-partners'))img.src=settings.logo||(BeeClient.frontendBase+'brand.svg');});
+   document.querySelectorAll('img').forEach(img=>{if(img.id==='camera-still'||img.closest('.standby-partners'))return;const secondary=img.closest('.english-brand')||img.classList.contains('english-brand');const src=secondary?settings.secondaryLogo:settings.logo;img.hidden=!src;if(src)img.src=src;else img.removeAttribute('src');});
    document.querySelectorAll('.school-brand strong,[data-product-school]').forEach(el=>el.textContent=settings.schoolName);
    document.querySelectorAll('.event-bug>span').forEach(el=>el.textContent=settings.eventName);
-   document.querySelectorAll('.control-brand').forEach(el=>{el.querySelector('img').src=settings.logo||(BeeClient.frontendBase+'brand.svg');if(!el.querySelector('.product-brand-name')){const name=document.createElement('span');name.className='product-brand-name';name.textContent=settings.schoolName;el.append(name);}});
+   document.querySelectorAll('.control-brand').forEach(el=>{const img=el.querySelector('img');img.hidden=!settings.logo;if(settings.logo)img.src=settings.logo;if(!el.querySelector('.product-brand-name')){const name=document.createElement('span');name.className='product-brand-name';name.textContent=settings.schoolName;el.append(name);}});
    if(!document.getElementById('product-back')&&!location.pathname.endsWith('screen.html')){const a=document.createElement('a');a.id='product-back';a.href=BeeClient.frontendBase;a.textContent='← Dashboard';document.body.append(a);}
  }
  async function speak(word,level,difficulty){
@@ -38,6 +39,8 @@ window.BeeProduct = (()=>{
  async function start(scripts){
    try{
     const ctx=await api('context');settings=ctx.settings;scope='spelling-bee-app:'+ctx.account.id+':';window.BeeProduct.settings=settings;
+    BeeAppearance.apply(settings);document.title=settings.schoolName+' · '+document.title;document.querySelectorAll('.arena').forEach(el=>el.remove());
+    document.querySelectorAll('#pool-select,#admin-category').forEach(select=>{select.replaceChildren(...settings.categories.map(id=>new Option(settings.categoryNames?.[id]||id,id)));});
     if(ctx.role==='screen'&&!location.pathname.endsWith('screen.html'))throw new Error('Open the screen link provided by your school.');
     if(ctx.role==='judge'&&!location.pathname.endsWith('judge.html'))throw new Error('Open the judge link provided by your school.');
     if(ctx.code&&!params.get('session')){params.set('session',ctx.code);history.replaceState(null,'',location.pathname+'?'+params.toString());}
@@ -45,5 +48,6 @@ window.BeeProduct = (()=>{
     brand();
    }catch(e){document.body.replaceChildren();const main=document.createElement('main');main.className='product-access-error';const h=document.createElement('h1');h.textContent='Spelling Bee App';const p=document.createElement('p');p.textContent=e.message;const a=document.createElement('a');a.href=BeeClient.frontendBase;a.textContent='Go to sign in';main.append(h,p,a);document.body.append(main);}
  }
- return {start,storage,Channel,settings,standby,speak};
+ const categoryLabel=id=>settings.categoryNames?.[id]||id;
+ return {start,storage,Channel,settings,standby,speak,categoryLabel};
 })();

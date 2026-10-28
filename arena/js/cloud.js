@@ -1,7 +1,7 @@
 "use strict";
 
 (() => {
-  // Dedicated Spelling Bee backend. This does NOT use Brighton Exams progress/results CMS.
+  // Dedicated Spelling Bee backend. This does NOT use other applications progress/results CMS.
   const API_BASE = window.BeeClient.apiBase+"live";
   const ENDPOINTS = {
     session: `${API_BASE}/session`,
@@ -21,7 +21,7 @@
       .slice(0, 48) || "main";
   }
 
-  function getDeviceId(storageKey = "brighton-spelling-device") {
+  function getDeviceId(storageKey = "bee-device-device") {
     let value = window.BeeProduct.storage.getItem(storageKey);
     if (value) return value;
 
@@ -221,7 +221,7 @@
   }
 
   async function loadWordList(level, difficulty) {
-    const safeLevel = String(level || "4TH-5TH").replace(/[^A-Za-z0-9+-]/g, "");
+    const safeLevel = String(level || (window.BeeProduct.settings.categories[0])).replace(/[^A-Za-z0-9+-]/g, "");
     const safeDifficulty = ["easy", "medium", "hard", "tiebreaker"].includes(difficulty) ? difficulty : "easy";
 
     const response = await fetch(
@@ -242,7 +242,7 @@
 
   async function loadRemainingPools(level, usedWords = {}) {
     const result = {};
-    const difficulties = ["JUNIOR", "SENIOR"].includes(level) ? ["easy", "medium", "hard", "tiebreaker"] : ["easy", "medium", "hard"];
+    const difficulties = ["easy", "medium", "hard", "tiebreaker"];
     await Promise.all(difficulties.map(async difficulty => {
       const all = await loadWordList(level, difficulty);
       const key = `${level}|${difficulty}`;
@@ -256,7 +256,7 @@
   const wordDataCache = new Map();
 
   async function loadWordData(level, difficulty) {
-    const safeLevel = String(level || "4TH-5TH").replace(/[^A-Za-z0-9+-]/g, "");
+    const safeLevel = String(level || (window.BeeProduct.settings.categories[0])).replace(/[^A-Za-z0-9+-]/g, "");
     const safeDifficulty = ["easy", "medium", "hard", "tiebreaker"].includes(difficulty) ? difficulty : "easy";
     const cacheKey = `${safeLevel}|${safeDifficulty}`;
 

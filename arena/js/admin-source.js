@@ -8,7 +8,7 @@
       this.busy = false; this.timer = null; this.nextAt = 0; this.retryAt = 0;
       this.lastInput = 0; this.lastWrite = 0; this.lastSaved = 0; this.waiters = [];
       this.operations = Promise.resolve();
-      this.owner = Cloud.getDeviceId("brighton-spelling-admin-source");
+      this.owner = Cloud.getDeviceId("bee-device-admin-source");
     }
     owns(state) { return Boolean(state?.sourceRole === "admin" && state.sourceId === this.owner); }
     async start(code, previous) {
@@ -91,7 +91,6 @@
           this.state = { ...this.state, hiddenMode: true }; this.onState(M.copy(this.state));
           const level = type === "category" ? value : this.state.level;
           let difficulty = type === "difficulty" ? value : this.state.difficulty;
-          if (difficulty === "tiebreaker" && !["JUNIOR", "SENIOR"].includes(level)) difficulty = "easy";
           try {
             const words = await Cloud.loadWordList(level, difficulty);
             if (!this.active || generation !== this.generation) throw new Error("Session changed.");

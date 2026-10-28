@@ -4,7 +4,7 @@
   if (typeof module === "object" && module.exports) module.exports = api;
   else root.BeeSession = api;
 })(typeof window !== "undefined" ? window : globalThis, () => {
-  const categories = ["4TH-5TH", "6TH-7TH", "JUNIOR", "SENIOR"];
+  const categories = typeof window!=="undefined" ? window.BeeProduct.settings.categories : ["4TH-5TH", "6TH-7TH", "JUNIOR", "SENIOR"];
   const difficulties = ["easy", "medium", "hard", "tiebreaker"];
   const copy = value => JSON.parse(JSON.stringify(value));
   const first = word => { const index = Array.from(word).findIndex(char => /[A-Za-z]/.test(char)); return index < 0 ? Array.from(word).length : index; };
@@ -13,14 +13,13 @@
       sourceRole: "admin", sourceId: owner, sourceRevision: Number(previous.sourceRevision || 0),
       level: categories.includes(previous.level) ? previous.level : categories[0],
       difficulty: difficulties.includes(previous.difficulty) ? previous.difficulty : "easy",
-      word: previous.word || "", wordToken: previous.wordToken || "", wordSequence: Number(previous.wordSequence || 0),
+      word: categories.includes(previous.level) ? previous.word || "" : "", wordToken: categories.includes(previous.level) ? previous.wordToken || "" : "", wordSequence: Number(previous.wordSequence || 0),
       marks: Array.isArray(previous.marks) ? previous.marks.slice() : [], pointer: Number(previous.pointer || 0),
       hiddenMode: true, usedWords: copy(previous.usedWords || {}), judgementRevision: Number(previous.judgementRevision || 0),
       judgementSource: previous.judgementSource || "admin", judgementUpdatedAt: Number(previous.judgementUpdatedAt || 0) };
   }
   function choose(state, words, level = state.level, difficulty = state.difficulty, random = Math.random) {
     if (!categories.includes(level) || !difficulties.includes(difficulty)) throw new Error("Choose a valid category and difficulty.");
-    if (difficulty === "tiebreaker" && !["JUNIOR", "SENIOR"].includes(level)) throw new Error("Tiebreaker is available for Junior and Senior.");
     const usedWords = copy(state.usedWords || {}), previousKey = `${state.level}|${state.difficulty}`;
     const reviewed = (state.marks || []).filter(mark => mark !== "skip");
     if (state.word && reviewed.length && reviewed.every(mark => mark === "ok")) {

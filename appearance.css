@@ -1,0 +1,19 @@
+/* The same three school colors drive the dashboard, operator windows and display. */
+html[data-school-theme],html[data-school-theme] body{background:var(--ui-bg)!important;color:var(--ui-page-fg)}
+[data-school-theme] :is(.sidebar,.panel,.launch-panel,.login-panel,dialog){background:var(--ui-window);color:var(--ui-fg);border-color:var(--ui-line)}
+[data-school-theme] :is(.topbar,.login-panel .eyebrow){background:var(--ui-window);color:var(--ui-fg);border-color:var(--ui-line)}
+[data-school-theme] :is(.sidebar nav button,.sidebar .brand,.sidebar-bottom small,.sidebar-label,.workspace-footer,.eyebrow,.muted,.small){color:inherit}
+[data-school-theme] :is(.sidebar nav button.active,.sidebar nav button:hover){background:var(--ui-soft);color:var(--ui-fg);border-color:var(--ui-line)}
+[data-school-theme] :is(.sidebar-bottom,.page-heading,.quick-link,.workspace-footer,.login-foot){border-color:var(--ui-line)}
+[data-school-theme] :is(input,textarea,select,.copy-row input){background:var(--ui-window);color:var(--ui-fg);border-color:var(--ui-line);box-shadow:none}
+[data-school-theme] :is(.secondary,.file-button,.copy-row button){background:var(--ui-soft);color:var(--ui-fg);border-color:var(--ui-line);box-shadow:none}
+[data-school-theme] :is(.primary,.primary:hover){background:var(--ui-accent);color:var(--ui-accent-ink);border-color:var(--ui-accent)}
+[data-school-theme] :is(a,.text-button,.quick-link h3){color:inherit}
+[data-school-theme] :is(.word-table,.word-table th,.word-table td){background:var(--ui-window);color:var(--ui-fg);border-color:var(--ui-line)}
+[data-school-theme] .word-table th,[data-school-theme] .word-table tr:nth-child(even) td{background:var(--ui-soft)}
+[data-school-theme] :is(.word-table input,.word-table textarea){border-color:var(--ui-line)}
+[data-school-theme] :is(.notice,.notice.error){background:var(--ui-window);color:var(--ui-fg);border-color:var(--ui-line);border-left-color:var(--ui-accent)}
+[data-school-theme] :is(.notice.error,.status){color:var(--ui-err)}
+[data-school-theme] ::placeholder{color:var(--ui-muted);opacity:1}
+[data-school-theme] :focus-visible{outline-color:var(--ui-accent)}
+.category-editor{margin-bottom:20px}.category-editor summary{cursor:pointer;font-weight:600}.category-row{display:flex;align-items:center;gap:10px;margin:10px 0}.category-row input{flex:1}.category-row button{flex:none}.three-columns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.import-example{white-space:pre-wrap;overflow-wrap:anywhere;background:var(--ui-soft,#edf0f2);border:1px solid var(--ui-line,#bbc4cc);padding:12px;font:12px/1.6 monospace}.import-hint{margin-bottom:15px}#ai-prompt{min-height:260px;font:13px/1.6 monospace}.brand.school-identity img{display:block;width:32px;height:32px;object-fit:contain}.brand.school-identity{gap:8px}.stage-preview{box-shadow:none}@media(max-width:700px){.three-columns{grid-template-columns:1fr}.category-row{gap:6px}}
