@@ -20,7 +20,7 @@ function openPage(page){
 }
 function preview(){
  const form=new FormData($('brand-form'));for(const [key,value] of form)settings[key]=value;
- const colors=BeeAppearance.apply(settings);
+ const colors=BeeAppearance.colors(settings);BeeAppearance.applyWorkspace(settings);
  const palettes=BeeAppearance.palettes;
  const light=colors.base==='#17212b';const font={modern:'Manrope, sans-serif',classic:'Georgia, serif',rounded:'ui-rounded, system-ui'}[settings.font];
  for(const id of ['overview-preview','brand-preview']){
@@ -135,11 +135,12 @@ $('category-rows').oninput=e=>{if(e.target.dataset.category!==undefined)category
 $('category-rows').onclick=e=>{const b=e.target.closest('[data-category-remove]');if(!b)return;categoryDraft.splice(Number(b.dataset.categoryRemove),1);renderCategories();};
 $('add-category').onclick=()=>{if(categoryDraft.length>=4)return;categoryDraft.push({id:'cat-'+crypto.randomUUID().slice(0,12),name:''});renderCategories();$('category-rows').lastElementChild.querySelector('input').focus();};
 $('save-categories').onclick=()=>run($('save-categories'),async()=>{
- if(dirtyBrand)throw new Error('Save your appearance changes before editing categories.');
  if(dirtyWords)throw new Error('Save or discard your word-list edits before changing categories.');
  if(categoryDraft.some(c=>!c.name.trim()))throw new Error('Enter a name for every category.');
- const latest=(await api('settings')).settings;settings=(await api('settings',{...latest,categories:categoryDraft.map(c=>c.id),categoryNames:Object.fromEntries(categoryDraft.map(c=>[c.id,c.name.trim()]))})).settings;
- fillCategories();words=[];await loadWords();notice('Categories saved. Refresh open competition views to load these names.');
+ const savedAppearance=dirtyBrand;if(savedAppearance)preview();
+ const latest=savedAppearance?structuredClone(settings):(await api('settings')).settings;settings=(await api('settings',{...latest,categories:categoryDraft.map(c=>c.id),categoryNames:Object.fromEntries(categoryDraft.map(c=>[c.id,c.name.trim()]))})).settings;
+ dirtyBrand=false;fillBrand();$('sidebar-school').textContent=settings.schoolName;$('overview-school').textContent=settings.schoolName;
+ fillCategories();words=[];await loadWords();notice((savedAppearance?'Categories and appearance saved.':'Categories saved.')+' Refresh open competition views to load your changes.');
 });
 const formattingPrompt=`Convert the word list below into CSV for a spelling bee app.
 Return only CSV, one row per word. Use exactly five columns in this order:

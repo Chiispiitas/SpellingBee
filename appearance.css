@@ -20,3 +20,7 @@ html[data-school-theme],html[data-school-theme] body{background:var(--ui-bg)!imp
 [data-school-theme] .quick-link p{color:var(--ui-muted)}
 [data-school-theme] .preview-top span:last-child{color:inherit;opacity:.75}
 [data-school-theme] :is(.login-foot,.login-panel .muted,.sidebar-bottom small){color:var(--ui-muted)}
+/* The workspace stays light; school themes still style competition views. */
+html[data-workspace=light] .sidebar{background:#e7ebee}
+html[data-workspace=light] .topbar{background:#31485e;color:#f5f7fa;border-color:#31485e}
+html[data-workspace=light] .sidebar nav button.active{border-left:3px solid var(--ui-accent)}
