@@ -1,10 +1,29 @@
 window.BeeProduct = (()=>{
  const nativeFetch=window.fetch.bind(window),params=new URLSearchParams(location.search);
  const standaloneStudy=location.pathname.endsWith('/arena/index.html');
- if(standaloneStudy){for(const key of ['session','code','access'])params.delete(key);history.replaceState(null,'',location.pathname+(params.size?'?'+params.toString():''));}
- const guestKey='bee-guest-access:'+location.pathname;
- const token=standaloneStudy?BeeClient.token():(params.get('access')||sessionStorage.getItem(guestKey)||BeeClient.token());
- if(params.has('access'))sessionStorage.setItem(guestKey,token);
+ const isAdmin=location.pathname.endsWith('/arena/admin.html');
+ const privatePreview=params.has('preview')&&!!BeeClient.token();
+ const guestRole=standaloneStudy?'study':location.pathname.endsWith('/judge.html')?'judge':'screen';
+ const guestKey='bee-guest-access:'+guestRole;
+ let token=isAdmin||privatePreview?BeeClient.token():'';
+ async function guestAccess(){
+   let code=params.get('code')||params.get('session')||sessionStorage.getItem('bee-school-code')||'';
+   if(!code){
+     code=await new Promise(resolve=>{
+       document.body.replaceChildren();const main=document.createElement('main');main.className='product-access-error';
+       const h=document.createElement('h1');h.textContent='Spelling Bee App';const form=document.createElement('form');
+       const label=document.createElement('label');label.textContent='School session code';const input=document.createElement('input');input.inputMode='numeric';input.pattern='[0-9]{1,16}';input.required=true;input.autocomplete='off';label.append(input);
+       const button=document.createElement('button');button.textContent='Continue';button.type='submit';form.append(label,button);main.append(h,form);document.body.append(main);
+       form.onsubmit=e=>{e.preventDefault();resolve(input.value.trim());};
+     });
+     params.set('code',code);location.replace(location.pathname+'?'+params.toString());return false;
+   }
+   const r=await nativeFetch(BeeClient.apiBase+'guest-access',{method:'POST',credentials:'omit',headers:{'Content-Type':'application/json'},body:JSON.stringify({code,role:guestRole})});
+   const data=await r.json();if(!r.ok)throw new Error(data.error||'Session code not found.');token=data.token;
+   sessionStorage.setItem('bee-school-code',code);
+   params.delete('access');if(standaloneStudy)params.delete('session');
+   history.replaceState(null,'',location.pathname+'?'+params.toString());return true;
+ }
  const api=async path=>{const r=await nativeFetch(BeeClient.apiBase+path,{credentials:'omit',headers:token?{'X-Requested-With':token}:{}});const data=await r.json();if(!r.ok||data.success===false)throw new Error(data.error||'Please sign in.');return data;};
  const dataCache=new Map();let scope='',settings={};
  async function wordList(level,difficulty){const k=level+'|'+difficulty;if(!dataCache.has(k))dataCache.set(k,api('word-list?level='+encodeURIComponent(level)+'&difficulty='+difficulty).then(d=>d.words).catch(e=>{dataCache.delete(k);throw e;}));return dataCache.get(k);}
@@ -40,16 +59,17 @@ window.BeeProduct = (()=>{
  }
  async function start(scripts){
    try{
+    if(!isAdmin&&!privatePreview&&!await guestAccess())return;
     const ctx=await api('context');settings=ctx.settings;scope='spelling-bee-app:'+ctx.account.id+':';window.BeeProduct.settings=settings;
     if(location.pathname.endsWith('/arena/admin.html')){const registered=(await api('school-session')).schoolSession;if(!registered?.ready)throw new Error('Create your school session in the workspace before opening Admin.');params.set('session',registered.code);history.replaceState(null,'',location.pathname+'?'+params.toString());}
     BeeAppearance.apply(settings);document.title=settings.schoolName+' · '+document.title;document.querySelectorAll('.arena').forEach(el=>el.remove());
     document.querySelectorAll('#pool-select,#admin-category').forEach(select=>{select.replaceChildren(...settings.categories.map(id=>new Option(settings.categoryNames?.[id]||id,id)));});
     if(ctx.role==='screen'&&!location.pathname.endsWith('screen.html'))throw new Error('Open the screen link provided by your school.');
     if(ctx.role==='judge'&&!location.pathname.endsWith('judge.html'))throw new Error('Open the judge link provided by your school.');
-    if(ctx.code&&!params.get('session')){params.set('session',ctx.code);history.replaceState(null,'',location.pathname+'?'+params.toString());}
+    if(!standaloneStudy&&ctx.code&&!params.get('session')){params.set('session',ctx.code);history.replaceState(null,'',location.pathname+'?'+params.toString());}
     for(const script of scripts){const el=document.createElement('script');if(script.src){el.src=script.src;await new Promise((resolve,reject)=>{el.onload=resolve;el.onerror=()=>reject(new Error('The competition could not load. Please refresh.'));document.body.append(el);});}else{el.textContent=script.code;document.body.append(el);}}
     brand();
-   }catch(e){document.body.replaceChildren();const main=document.createElement('main');main.className='product-access-error';const h=document.createElement('h1');h.textContent='Spelling Bee App';const p=document.createElement('p');p.textContent=e.message;const a=document.createElement('a');a.href=BeeClient.frontendBase+'?v='+BeeClient.release;a.textContent='Go to sign in';main.append(h,p,a);document.body.append(main);}
+   }catch(e){document.body.replaceChildren();const main=document.createElement('main');main.className='product-access-error';const h=document.createElement('h1');h.textContent='Spelling Bee App';const p=document.createElement('p');p.textContent=e.message;const a=document.createElement('a');a.href=BeeClient.frontendBase+'?v='+BeeClient.release;a.textContent=isAdmin?'Go to sign in':'Try another session code';if(!isAdmin){a.href=location.pathname+'?v='+BeeClient.release;a.onclick=()=>sessionStorage.removeItem('bee-school-code');}main.append(h,p,a);document.body.append(main);}
  }
  const categoryLabel=id=>settings.categoryNames?.[id]||id;
  return {start,storage,Channel,settings,standby,speak,categoryLabel};
