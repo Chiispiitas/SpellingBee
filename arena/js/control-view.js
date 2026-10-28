@@ -311,7 +311,7 @@
 
     const incomingVoteSeq = Number(state.voteSeq || 0);
 
-    // The local Judge UI is optimistic. Wix may briefly return the previous
+    // The local Judge UI is optimistic. server may briefly return the previous
     // CMS row while a newer mark is still being written. Never let an older
     // server snapshot repaint newer local progress.
     if (!force && state.wordToken === judgeWordToken && incomingVoteSeq < voteSeq) {
@@ -619,7 +619,7 @@
 
     // Mobile network requests can finish out of order. Do not rewind to a
     // stale Presenter word and erase the Admin's current letter progress.
-    // Both timestamps are assigned by the same Wix backend.
+    // Both timestamps are assigned by the same server backend.
     if (presenter?.sourceRole === "admin" && nextPresenter.sourceRole === "admin" && presenter.sourceId === nextPresenter.sourceId &&
         Number(nextPresenter.sourceRevision || 0) < Number(presenter.sourceRevision || 0)) return false;
     const previousUpdated = Date.parse(presenter?.updatedAt || "");
@@ -1025,7 +1025,7 @@
       }
     })
       .then(result => {
-        // Wix may return an already-stored newer command instead of saving this
+        // server may return an already-stored newer command instead of saving this
         // word state. Treat that as a rejected write and retry with its sequence.
         const storedSeq = Number(result?.command?.commandSeq ?? seq);
         if (storedSeq !== seq) {

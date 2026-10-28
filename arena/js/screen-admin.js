@@ -24,7 +24,7 @@
     </div>
     <div class="director-timer"><label>Break countdown seconds<input type="number" id="screen-duration" min="1" max="3600" value="60"></label><label class="check-label"><input type="checkbox" id="screen-timer-visible" checked>Show break countdown</label><button type="button" id="screen-timer-start">Start / resume countdown</button><button type="button" id="screen-timer-pause">Pause countdown</button><button type="button" id="screen-timer-reset">Reset countdown</button><span class="director-help" id="live-timer">60s · paused</span></div>
     <p class="director-status" id="director-status" role="status" aria-live="polite"></p>
-    <section class="director-roster"><h3>Contestants <span class="director-count" id="roster-count"></span></h3><p class="director-help">Paste one contestant per line: <strong>Name | Grade / class | Number</strong>.</p><label>Contestant list<textarea id="roster-paste" placeholder="Isabella Martinez | Grade 5 | 1&#10;Santiago Lopez | Grade 6 | 2"></textarea></label><div class="director-actions"><button type="button" id="roster-add">Add pasted contestants</button><button type="button" id="roster-save">Publish contestant list</button></div><div class="roster-history"><div class="director-actions"><button type="button" id="roster-undo" disabled>Undo · Ctrl+Z</button><button type="button" id="roster-redo" disabled>Redo · Ctrl+Y</button><button type="button" id="roster-export">Download history</button></div><p class="director-help" id="roster-history-status" role="status">Roster changes are saved locally immediately and backed up to Wix. Undo of an on-air change also restores it on Screen View.</p><details><summary>Recent roster changes</summary><ol id="roster-history-list"></ol></details></div><div class="roster-scroll"><table class="roster-table"><thead><tr><th>Number</th><th>Name</th><th>Grade / class</th><th>Lives</th><th>Status</th><th>Podium</th><th>Remove</th></tr></thead><tbody id="roster-rows"></tbody></table></div><div class="director-actions roster-footer"><button type="button" id="roster-add-manual">Add contestant</button></div></section>
+    <section class="director-roster"><h3>Contestants <span class="director-count" id="roster-count"></span></h3><p class="director-help">Paste one contestant per line: <strong>Name | Grade / class | Number</strong>.</p><label>Contestant list<textarea id="roster-paste" placeholder="Isabella Martinez | Grade 5 | 1&#10;Santiago Lopez | Grade 6 | 2"></textarea></label><div class="director-actions"><button type="button" id="roster-add">Add pasted contestants</button><button type="button" id="roster-save">Publish contestant list</button></div><div class="roster-history"><div class="director-actions"><button type="button" id="roster-undo" disabled>Undo · Ctrl+Z</button><button type="button" id="roster-redo" disabled>Redo · Ctrl+Y</button><button type="button" id="roster-export">Download history</button></div><p class="director-help" id="roster-history-status" role="status">Roster changes are saved locally immediately and backed up to the server. Undo of an on-air change also restores it on Screen View.</p><details><summary>Recent roster changes</summary><ol id="roster-history-list"></ol></details></div><div class="roster-scroll"><table class="roster-table"><thead><tr><th>Number</th><th>Name</th><th>Grade / class</th><th>Lives</th><th>Status</th><th>Podium</th><th>Remove</th></tr></thead><tbody id="roster-rows"></tbody></table></div><div class="director-actions roster-footer"><button type="button" id="roster-add-manual">Add contestant</button></div></section>
     <span id="broadcast-code" hidden>—</span>`;
   document.querySelector(".control-shell").append(panel);
   const $ = id => document.getElementById(id);
@@ -66,8 +66,8 @@
   }
   function saveHistory() {
     if (!history) return;
-    try { window.BeeProduct.storage.setItem(historyKey(), JSON.stringify(history.data)); $("roster-history-status").textContent = backedUpAt >= history.data.savedAt ? "History saved on this browser and backed up to Wix." : "History saved on this browser · backing up to Wix…"; }
-    catch { $("roster-history-status").textContent = "Browser storage is full. Download history while the Wix backup is retried."; }
+    try { window.BeeProduct.storage.setItem(historyKey(), JSON.stringify(history.data)); $("roster-history-status").textContent = backedUpAt >= history.data.savedAt ? "History saved on this browser and backed up to the server." : "History saved on this browser · backing up to the server…"; }
+    catch { $("roster-history-status").textContent = "Browser storage is full. Download history while the server backup is retried."; }
     historyControls(); clearTimeout(backupTimer); backupTimer = setTimeout(backupHistory, 2500);
   }
   async function backupHistory() {
@@ -78,8 +78,8 @@
       if (run !== generation) return;
       if (!saved.session?.screenRosterHistory) throw new Error("History backup was not confirmed.");
       backedUpAt = data.savedAt;
-      $("roster-history-status").textContent = backedUpAt === history.data.savedAt ? "History saved on this browser and backed up to Wix." : "New changes saved locally · backup pending…";
-    } catch { if (run === generation) $("roster-history-status").textContent = "History saved on this browser. Wix backup will retry automatically."; }
+      $("roster-history-status").textContent = backedUpAt === history.data.savedAt ? "History saved on this browser and backed up to the server." : "New changes saved locally · backup pending…";
+    } catch { if (run === generation) $("roster-history-status").textContent = "History saved on this browser. Server backup will retry automatically."; }
     finally { backupBusy = false; if (history && backedUpAt < history.data.savedAt) { clearTimeout(backupTimer); backupTimer = setTimeout(backupHistory, Math.max(5000, Cloud.retryDelay())); } }
   }
   async function restoreRoster(forward) {
@@ -289,7 +289,7 @@
       historyCode = await M.rosterHistoryCode(sourceCode);
       let localHistory, cloudHistory;
       try { localHistory = JSON.parse(window.BeeProduct.storage.getItem(historyKey()) || "null"); } catch { /* Start with the current roster when old data is invalid. */ }
-      try { cloudHistory = (await Cloud.fetchPresenter(historyCode))?.history; } catch { /* Local recovery must remain available when Wix is offline. */ }
+      try { cloudHistory = (await Cloud.fetchPresenter(historyCode))?.history; } catch { /* Local recovery must remain available when server is offline. */ }
       if (run !== generation) return;
       const savedHistory = [localHistory, cloudHistory].filter(value => value?.version === 1 && Array.isArray(value.entries) && value.checkpoint).sort((a, b) => b.savedAt - a.savedAt)[0];
       history = new H.History(draft, savedHistory);
@@ -301,7 +301,7 @@
       ready = true;
       if (!found) {
         const saved = await Cloud.writeState({ sessionCode: broadcastCode, role: "presenter", state: { screenBroadcast: true, broadcast: live } });
-        if (!saved.session?.screenBroadcast) throw new Error("Wix did not acknowledge the screen session.");
+        if (!saved.session?.screenBroadcast) throw new Error("The server did not acknowledge the screen session.");
       }
       $("open-screen").href = `screen.html?session=${sourceCode}&view=stage`;
       $("open-camera-screen").href = `screen.html?session=${sourceCode}&view=camera`;

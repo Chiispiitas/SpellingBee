@@ -1,4 +1,4 @@
-// This is public configuration, never a Wix credential or customer password.
+// This is public configuration, never a server credential or customer password.
 window.BeeClient=(()=>{
  const frontendBase=new URL('./',document.currentScript.src).href;
  const apiBase='https://headless-iiwbgwtcvli-chiispiitas-140b.wix-site-host.com/api/';

@@ -37,7 +37,7 @@
   let cooldownUntil = 0, failures = 0;
   const quotaFailures = { read: 0, write: 0 };
   const pause = ms => new Promise(resolve => window.setTimeout(resolve, ms));
-  // Share confirmed changes between windows on this device. Wix remains the
+  // Share confirmed changes between windows on this device. server remains the
   // authority; nothing is broadcast until the server has accepted the write.
   const channels = new Map(), listeners = new Map();
   function channelFor(code) {

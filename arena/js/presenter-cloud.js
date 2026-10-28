@@ -254,7 +254,7 @@
       return presenterWritePromise;
     }
 
-    // Latest-state wins: local O/P/Backspace can happen much faster than a Wix
+    // Latest-state wins: local O/P/Backspace can happen much faster than a server
     // POST. Never build a queue of obsolete Presenter states.
     lastStateFingerprint = nextFingerprint;
     if (!force) lastLocalChangeAt = Date.now();
@@ -307,7 +307,7 @@
       updatedAt: Number(remote.judgementUpdatedAt || 0)
     };
 
-    // A late Wix command must never overwrite a newer O/P/Backspace input
+    // A late server command must never overwrite a newer O/P/Backspace input
     // that happened directly on Presenter.
     if (compareJudgementMeta(incomingMeta) <= 0) return;
 
