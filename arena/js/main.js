@@ -72,6 +72,7 @@ const btnEasy = document.getElementById('btn-easy');
 const btnMedium = document.getElementById('btn-medium');
 const btnHard = document.getElementById('btn-hard');
 const btnTiebreaker = document.getElementById('btn-tiebreaker');
+btnTiebreaker.hidden = false;
 const elPoolSelect = document.getElementById('pool-select');
 const elVolumeSlider = document.getElementById('volume-slider');
 const elVolumeValue = document.getElementById('volume-value');

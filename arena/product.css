@@ -23,3 +23,10 @@ body::before,body::after,.arena,.topbar::before,.topbar::after{display:none!impo
 .study-view :is(.controls,.session-tray,button,select){background:var(--ui-window)!important;color:var(--ui-fg)!important;border-color:var(--ui-line)!important;box-shadow:none!important}.study-view :is(button.primary,button.primary:hover){background:var(--ui-accent)!important;color:var(--ui-accent-ink)!important}.study-view .char{color:var(--ui-page-fg)}.study-view .char.ok{color:var(--ui-ok)}.study-view .char.err{color:var(--ui-err)}
 .broadcast :is(.broadcast-header,.contestant-card,.board-card){border-color:var(--ui-line)}.broadcast .eyebrow{color:var(--gold)}.broadcast :is(.scene-word.correct,.word-reveal.correct){color:var(--ui-ok)}.broadcast :is(.scene-word.incorrect,.word-reveal.incorrect){color:var(--ui-err)}
 @media(max-width:600px){.control-brand{gap:8px}.control-brand img{width:38px}.product-brand-name{font-size:12px;max-width:130px}.control-header{flex-wrap:wrap}.product-study-brand{padding:12px}.product-study-brand img{height:40px;width:45px}}
+[hidden]{display:none!important}
+.control-view .info-card h2,.control-view .info-card p,.control-view .join-card h1,.control-view .connection-pill{font-family:inherit}
+.control-view .word-reveal-segments button.selected{background:var(--ui-window)!important}
+.broadcast[data-layout=stream] .school-brand,.broadcast[data-layout=stream] .broadcast-event,.broadcast[data-layout=stream] .speller-layout,.broadcast[data-layout=stream] .clue-panel,.broadcast[data-layout=stream] .word-layout,.broadcast[data-layout=stream] .pending-panel,.broadcast[data-layout=stream] .centered-layout{background:var(--ui-window);color:var(--ui-fg);box-shadow:none}
+.broadcast[data-layout=stream] .eyebrow{color:var(--ui-accent-text)}
+.study-view .word,.study-view .char.active,.study-view .char.dot{color:var(--ui-page-fg);text-shadow:none}
+.study-view .controls .group-label,.study-view .volume-value,.study-view .session-tray p{color:var(--ui-fg)}

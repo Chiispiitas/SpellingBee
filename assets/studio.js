@@ -93,7 +93,7 @@ function parseDelimited(text){
  const rows=[];let row=[],value='',quoted=false;
  for(let i=0;i<text.length;i++){const c=text[i];if(c==='"'){if(quoted&&text[i+1]==='"'){value+='"';i++;}else if(quoted||value==='')quoted=!quoted;else value+=c;}else if(c===delimiter&&!quoted){row.push(value);value='';}else if((c==='\n'||c==='\r')&&!quoted){if(c==='\r'&&text[i+1]==='\n')i++;row.push(value);if(row.some(s=>s.trim()))rows.push(row);row=[];value='';}else value+=c;}
  if(quoted)throw new Error('An opening quote is missing its closing quote.');row.push(value);if(row.some(s=>s.trim()))rows.push(row);
- if(rows[0]&&/^(word|palabra)$/i.test(rows[0][0].trim()))rows.shift();
+ if(rows[0]?.length>1&&/^(word|palabra)$/i.test(rows[0][0].trim())&&/^(definition|definici[oó]n)$/i.test(rows[0][1].trim()))rows.shift();
  if(rows.some(r=>r.length>5))throw new Error('A row has more than five fields. Put text containing commas inside double quotes.');
  return rows.map(r=>({word:r[0]?.trim()||'',definition:r[1]?.trim()||'',example:r[2]?.trim()||'',ipa:r[3]?.trim()||'',audio:r[4]?.trim()||''}));
 }
